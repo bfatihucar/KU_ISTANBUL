@@ -1,0 +1,2437 @@
+# Setup script to create project file using project parameters
+#clear;
+newproject;
+switchtolayout; 
+importmaterialdb("spherical-cavity_2um_fsp_export.mdf");
+
+# Global source settings (Global_Source)
+global_source_settings=struct;
+global_source_settings.bandwidth=3.21206e+14;
+global_source_settings.center_frequency=5.88878e+14;
+global_source_settings.center_wavelength=5.5e-07;
+global_source_settings.eliminate_discontinuities=1;
+global_source_settings.frequency=5.88878e+14;
+global_source_settings.frequency_span=3.21206e+14;
+global_source_settings.frequency_start=4.28275e+14;
+global_source_settings.frequency_stop=7.49481e+14;
+global_source_settings.offset=7.52311e-15;
+global_source_settings.optimize_for_short_pulse=1;
+global_source_settings.pulse_type='broadband';
+global_source_settings.pulselength=2.65335e-15;
+global_source_settings.set_frequency=0;
+global_source_settings.set_time_domain=0;
+global_source_settings.set_wavelength=1;
+global_source_settings.wavelength_span=3e-07;
+global_source_settings.wavelength_start=4e-07;
+global_source_settings.wavelength_stop=7e-07;
+
+setglobalsource("set wavelength",1);
+setglobalsource("center wavelength", global_source_settings.center_wavelength);
+setglobalsource("wavelength span", global_source_settings.wavelength_span);
+
+setglobalsource("eliminate discontinuities", global_source_settings.eliminate_discontinuities);
+setglobalsource("optimize for short pulse", global_source_settings.optimize_for_short_pulse);
+
+# Global monitor settings (Global_Monitor)
+global_monitor_settings=struct;
+global_monitor_settings.custom_frequency_samples=5.88878e+14;
+global_monitor_settings.frequency_center=5.88878e+14;
+global_monitor_settings.frequency_points=5;
+global_monitor_settings.frequency_span=3.21206e+14;
+global_monitor_settings.maximum_frequency=7.49481e+14;
+global_monitor_settings.maximum_wavelength=7e-07;
+global_monitor_settings.min_smpling_per_cycle=2;
+global_monitor_settings.minimum_frequency=4.28275e+14;
+global_monitor_settings.minimum_wavelength=4e-07;
+global_monitor_settings.sample_spacing='uniform';
+global_monitor_settings.use_source_limits=1;
+global_monitor_settings.use_wavelength_spacing=0;
+global_monitor_settings.wavelength_center=5.5e-07;
+global_monitor_settings.wavelength_span=3e-07;
+
+try{setglobalmonitor("frequency center", global_monitor_settings.frequency_center);}catch(ErrMmsg);
+try{setglobalmonitor("frequency span", global_monitor_settings.frequency_span);}catch(ErrMsg);
+try{setglobalmonitor("sample spacing", global_monitor_settings.sample_spacing);}catch(ErrMsg);
+try{setglobalmonitor("use source limits", global_monitor_settings.use_source_limits);}catch(ErrMsg);
+try{setglobalmonitor("frequency points", global_monitor_settings.frequency_points);}catch(ErrMsg);
+try{setglobalmonitor("min sampling per cycle", global_monitor_settings.min_smpling_per_cycle);}catch(ErrMsg);
+
+# Setting up simulation objects
+
+# membrane (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",1);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","2.25");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","membrane");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",1.05e-06);
+obj_properties = setfield(obj_properties, "radius 2",1.05e-06);
+obj_properties = setfield(obj_properties, "radius 3",1.05e-06);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",0);
+obj_properties = setfield(obj_properties, "y",0);
+obj_properties = setfield(obj_properties, "z",0);
+
+groupscope("::model");addsphere;
+try{set(obj_properties);}
+
+# cytoplasm (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0.5);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.37");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","cytoplasm");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",1e-06);
+obj_properties = setfield(obj_properties, "radius 2",1e-06);
+obj_properties = setfield(obj_properties, "radius 3",1e-06);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",0);
+obj_properties = setfield(obj_properties, "y",0);
+obj_properties = setfield(obj_properties, "z",0);
+
+groupscope("::model");addsphere;
+try{set(obj_properties);}
+
+# gauss_par_distr (Structure Group)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "name","gauss_par_distr");
+script = "deleteall;
+####################################################
+# Random particle distribution - Gaussian
+# This structure group consists of Gaussian distributed particles
+# that can vary in size. 
+#
+# Input properties
+# seed: randomizer seed
+# index: index of refraction
+# material
+# n spheres: number of particles
+# r max,r min: maximum and minimum radii of particles
+# x,y,z std: number of standard deviations half the object span covers
+# x,y,z span: The object span
+# allow overlap: If set to 1, the particles can overlap.  If zero, particles are not 
+#                allowed to overlap. It is important to realize that setting this option to zero
+#                may alter the particle distribution. 
+#
+# Tags: gaussian normal random particle distribution 
+#
+# Copyright 2012 Lumerical Solutions Inc
+#####################################################
+
+# simplify variable names by removing spaces
+n_spheres = %n spheres%;
+r_max = %r max%;
+r_min = %r min%;
+x_std = %x std%;
+y_std = %y std%;
+z_std = %z std%;
+x_span = %x span%;
+y_span = %y span%;
+z_span = %z span%;
+allow_overlap = %allow overlap%;
+
+# safety checks
+if ((r_max<r_min) or (r_max<0) or (r_min<0)) {
+  message("+'"'+"invalid radius values"+'"'+");
+  break;
+}
+if ((x_span<0) or (y_span<0) or (z_span<0)) {
+  message("+'"'+"invalid object span"+'"'+");
+  break;
+}
+if ((allow_overlap!=1) and (allow_overlap!=0)) {
+  message("+'"'+"Invalid overlap setting.  Setting 'allow overlap' to 1"+'"'+");
+  allow_overlap = 1;
+}
+
+# set random number generator seed
+randreset(seed);
+retry=n_spheres+retry; #condition to end loop if it runs too long
+xl=matrix(1,n_spheres);  #arrays to hold all the positions
+yl=matrix(1,n_spheres);
+zl=matrix(1,n_spheres);
+rl=matrix(1,n_spheres);
+n_sphere_added=0;
+
+for (i=1; i<=n_spheres; i=i+1) {
+  addSp=1;  # to add a sphere or not
+  
+  #----- distribution criteria -----
+  # Box-Muller Gaussian number generation
+  rl(i)=rand(r_min,r_max);
+  xTemp = rand(-1,1);
+  yTemp = rand(-1,1);
+  zTemp = rand(-1,1);
+  z2Temp= rand(-1,1);
+  w = xTemp^2 + yTemp^2;
+  w2= zTemp^2 + z2Temp^2;
+  if ( (w<1) & (w2<1) ) {
+    w = sqrt((-2*log(w))/w);
+    w2= sqrt((-2*log(w2))/w2);
+    xl(i) = xTemp*w*x_span/(2*x_std);  
+    yl(i) = yTemp*w*y_span/(2*y_std);
+    zl(i) = zTemp*w2*z_span/(2*z_std);     
+  #---------------------------------    
+
+    #----- check for overlaps -----
+    if (!allow_overlap) {
+      for(j=1; j<=i-1; j=j+1) {
+        dx=xl(i)-xl(j);
+        dy=yl(i)-yl(j);
+        dz=zl(i)-zl(j);  
+        dist = sqrt(dx^2 + dy^2 + dz^2);
+        if ( real(dist) >= rl(i)+rl(j) ) {   # if the distance is acceptable, add a sphere
+          addSp = addSp; 
+        } else { 
+          addSp = 0;
+          j=i;   # exit loop
+        } 
+      }
+    }
+    #------------------------------
+  } else { addSp = 0; }
+ 
+  if ( addSp ) {
+    n_sphere_added=n_sphere_added+1; #counting no. of particles added
+    addsphere;
+    set("+'"'+"material"+'"'+",material); 
+    if(get("+'"'+"material"+'"'+")=="+'"'+"<Object defined dielectric>"+'"'+") 
+      { set("+'"'+"index"+'"'+",index); }
+    set("+'"'+"radius"+'"'+",rl(i));
+    set("+'"'+"x"+'"'+",xl(i));
+    set("+'"'+"y"+'"'+",yl(i));
+    set("+'"'+"z"+'"'+",zl(i));
+    set("+'"'+"detail"+'"'+",0);  # reduce drawing detail to make graphics faster
+  } else { 
+    i=i-1;  # if the distance isn't acceptable, retry main loop
+    retry=retry-1;
+    if(retry==0) { 
+      message("+'"'+"Warning. Only "+'"'+"+num2str(n_sphere_added)+ "+'"'+" spheres are added. Increase 'retry' or 'spans'"+'"'+");
+      break;
+    } 
+  }
+}
+
+
+make_plots=0;
+if (make_plots) {
+  plot(1:n_spheres,xl,"+'"'+""+'"'+","+'"'+""+'"'+","+'"'+"X"+'"'+","+'"'+"plot points"+'"'+");
+  plot(1:n_spheres,yl,"+'"'+""+'"'+","+'"'+""+'"'+","+'"'+"Y"+'"'+","+'"'+"plot points"+'"'+");
+  plot(1:n_spheres,zl,"+'"'+""+'"'+","+'"'+""+'"'+","+'"'+"Z"+'"'+","+'"'+"plot points"+'"'+");
+}
+";
+obj_properties = setfield(obj_properties, "script",script);
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Structure Group");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",0);
+obj_properties = setfield(obj_properties, "y",0);
+obj_properties = setfield(obj_properties, "z",0);
+
+groupscope("::model");addstructuregroup;
+try{set(obj_properties);}
+
+adduserprop("allow overlap",0,0);
+
+adduserprop("index",0,1.5);
+
+adduserprop("material",1,"<Object defined dielectric>");
+
+adduserprop("n spheres",0,50);
+
+adduserprop("r max",0,5e-08);
+
+adduserprop("r min",0,1e-08);
+
+adduserprop("retry",0,1000);
+
+adduserprop("seed",0,1234);
+
+adduserprop("x span",0,3e-06);
+
+adduserprop("x std",0,3);
+
+adduserprop("y span",0,3e-06);
+
+adduserprop("y std",0,3);
+
+adduserprop("z span",0,3e-06);
+
+adduserprop("z std",0,3);
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",1.76608e-08);
+obj_properties = setfield(obj_properties, "radius 2",1.76608e-08);
+obj_properties = setfield(obj_properties, "radius 3",1.76608e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",-2.27114e-08);
+obj_properties = setfield(obj_properties, "y",1.18701e-06);
+obj_properties = setfield(obj_properties, "z",6.46667e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",3.44845e-08);
+obj_properties = setfield(obj_properties, "radius 2",3.44845e-08);
+obj_properties = setfield(obj_properties, "radius 3",3.44845e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",3.54124e-07);
+obj_properties = setfield(obj_properties, "y",3.36752e-07);
+obj_properties = setfield(obj_properties, "z",1.8481e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",2.09037e-08);
+obj_properties = setfield(obj_properties, "radius 2",2.09037e-08);
+obj_properties = setfield(obj_properties, "radius 3",2.09037e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",-3.64174e-07);
+obj_properties = setfield(obj_properties, "y",-2.33012e-07);
+obj_properties = setfield(obj_properties, "z",-2.8149e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",2.43127e-08);
+obj_properties = setfield(obj_properties, "radius 2",2.43127e-08);
+obj_properties = setfield(obj_properties, "radius 3",2.43127e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",-1.61716e-07);
+obj_properties = setfield(obj_properties, "y",3.30383e-10);
+obj_properties = setfield(obj_properties, "z",-7.15837e-08);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",2.32406e-08);
+obj_properties = setfield(obj_properties, "radius 2",2.32406e-08);
+obj_properties = setfield(obj_properties, "radius 3",2.32406e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",3.15655e-07);
+obj_properties = setfield(obj_properties, "y",4.49124e-07);
+obj_properties = setfield(obj_properties, "z",-1.26408e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",3.24478e-08);
+obj_properties = setfield(obj_properties, "radius 2",3.24478e-08);
+obj_properties = setfield(obj_properties, "radius 3",3.24478e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",-3.44585e-07);
+obj_properties = setfield(obj_properties, "y",2.39279e-09);
+obj_properties = setfield(obj_properties, "z",-1.69783e-08);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",1.08858e-08);
+obj_properties = setfield(obj_properties, "radius 2",1.08858e-08);
+obj_properties = setfield(obj_properties, "radius 3",1.08858e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",4.85516e-07);
+obj_properties = setfield(obj_properties, "y",-3.72415e-07);
+obj_properties = setfield(obj_properties, "z",2.43648e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",4.94856e-08);
+obj_properties = setfield(obj_properties, "radius 2",4.94856e-08);
+obj_properties = setfield(obj_properties, "radius 3",4.94856e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",-1.49397e-07);
+obj_properties = setfield(obj_properties, "y",-4.35696e-07);
+obj_properties = setfield(obj_properties, "z",3.28423e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",3.60551e-08);
+obj_properties = setfield(obj_properties, "radius 2",3.60551e-08);
+obj_properties = setfield(obj_properties, "radius 3",3.60551e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",-5.09275e-07);
+obj_properties = setfield(obj_properties, "y",-1.10751e-06);
+obj_properties = setfield(obj_properties, "z",9.62948e-08);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",4.16249e-08);
+obj_properties = setfield(obj_properties, "radius 2",4.16249e-08);
+obj_properties = setfield(obj_properties, "radius 3",4.16249e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",-9.76699e-07);
+obj_properties = setfield(obj_properties, "y",-1.82173e-07);
+obj_properties = setfield(obj_properties, "z",9.37717e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",1.16222e-08);
+obj_properties = setfield(obj_properties, "radius 2",1.16222e-08);
+obj_properties = setfield(obj_properties, "radius 3",1.16222e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",-5.6927e-07);
+obj_properties = setfield(obj_properties, "y",7.68964e-08);
+obj_properties = setfield(obj_properties, "z",9.22043e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",3.81833e-08);
+obj_properties = setfield(obj_properties, "radius 2",3.81833e-08);
+obj_properties = setfield(obj_properties, "radius 3",3.81833e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",-2.8075e-07);
+obj_properties = setfield(obj_properties, "y",-6.39119e-07);
+obj_properties = setfield(obj_properties, "z",-1.10651e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",4.71818e-08);
+obj_properties = setfield(obj_properties, "radius 2",4.71818e-08);
+obj_properties = setfield(obj_properties, "radius 3",4.71818e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",1.20943e-07);
+obj_properties = setfield(obj_properties, "y",2.89157e-07);
+obj_properties = setfield(obj_properties, "z",3.45015e-08);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",3.13324e-08);
+obj_properties = setfield(obj_properties, "radius 2",3.13324e-08);
+obj_properties = setfield(obj_properties, "radius 3",3.13324e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",-5.64476e-08);
+obj_properties = setfield(obj_properties, "y",-2.50279e-07);
+obj_properties = setfield(obj_properties, "z",-8.17206e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",2.72061e-08);
+obj_properties = setfield(obj_properties, "radius 2",2.72061e-08);
+obj_properties = setfield(obj_properties, "radius 3",2.72061e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",-3.68465e-07);
+obj_properties = setfield(obj_properties, "y",5.72239e-07);
+obj_properties = setfield(obj_properties, "z",3.77496e-08);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",1.44758e-08);
+obj_properties = setfield(obj_properties, "radius 2",1.44758e-08);
+obj_properties = setfield(obj_properties, "radius 3",1.44758e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",-3.68808e-07);
+obj_properties = setfield(obj_properties, "y",9.43411e-08);
+obj_properties = setfield(obj_properties, "z",8.74573e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",2.141e-08);
+obj_properties = setfield(obj_properties, "radius 2",2.141e-08);
+obj_properties = setfield(obj_properties, "radius 3",2.141e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",6.62342e-07);
+obj_properties = setfield(obj_properties, "y",3.13034e-07);
+obj_properties = setfield(obj_properties, "z",-1.1546e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",3.95409e-08);
+obj_properties = setfield(obj_properties, "radius 2",3.95409e-08);
+obj_properties = setfield(obj_properties, "radius 3",3.95409e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",8.7115e-07);
+obj_properties = setfield(obj_properties, "y",4.44305e-07);
+obj_properties = setfield(obj_properties, "z",-1.01713e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",4.59986e-08);
+obj_properties = setfield(obj_properties, "radius 2",4.59986e-08);
+obj_properties = setfield(obj_properties, "radius 3",4.59986e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",7.9499e-07);
+obj_properties = setfield(obj_properties, "y",-2.8767e-07);
+obj_properties = setfield(obj_properties, "z",1.95345e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",2.74757e-08);
+obj_properties = setfield(obj_properties, "radius 2",2.74757e-08);
+obj_properties = setfield(obj_properties, "radius 3",2.74757e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",2.72946e-07);
+obj_properties = setfield(obj_properties, "y",6.83084e-08);
+obj_properties = setfield(obj_properties, "z",7.82153e-08);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",3.12621e-08);
+obj_properties = setfield(obj_properties, "radius 2",3.12621e-08);
+obj_properties = setfield(obj_properties, "radius 3",3.12621e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",2.08147e-07);
+obj_properties = setfield(obj_properties, "y",-5.4851e-07);
+obj_properties = setfield(obj_properties, "z",2.46125e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",2.90617e-08);
+obj_properties = setfield(obj_properties, "radius 2",2.90617e-08);
+obj_properties = setfield(obj_properties, "radius 3",2.90617e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",1.49943e-07);
+obj_properties = setfield(obj_properties, "y",4.3018e-07);
+obj_properties = setfield(obj_properties, "z",-6.58418e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",1.61029e-08);
+obj_properties = setfield(obj_properties, "radius 2",1.61029e-08);
+obj_properties = setfield(obj_properties, "radius 3",1.61029e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",-6.18207e-07);
+obj_properties = setfield(obj_properties, "y",1.28728e-07);
+obj_properties = setfield(obj_properties, "z",-5.4897e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",3.01024e-08);
+obj_properties = setfield(obj_properties, "radius 2",3.01024e-08);
+obj_properties = setfield(obj_properties, "radius 3",3.01024e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",7.45081e-07);
+obj_properties = setfield(obj_properties, "y",9.74793e-08);
+obj_properties = setfield(obj_properties, "z",-2.85956e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",2.30283e-08);
+obj_properties = setfield(obj_properties, "radius 2",2.30283e-08);
+obj_properties = setfield(obj_properties, "radius 3",2.30283e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",-2.15467e-07);
+obj_properties = setfield(obj_properties, "y",-1.92421e-07);
+obj_properties = setfield(obj_properties, "z",9.46481e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",2.01046e-08);
+obj_properties = setfield(obj_properties, "radius 2",2.01046e-08);
+obj_properties = setfield(obj_properties, "radius 3",2.01046e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",6.60768e-07);
+obj_properties = setfield(obj_properties, "y",-5.03792e-07);
+obj_properties = setfield(obj_properties, "z",6.25652e-09);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",3.90663e-08);
+obj_properties = setfield(obj_properties, "radius 2",3.90663e-08);
+obj_properties = setfield(obj_properties, "radius 3",3.90663e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",1.33396e-07);
+obj_properties = setfield(obj_properties, "y",2.1977e-07);
+obj_properties = setfield(obj_properties, "z",-1.14959e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",1.31641e-08);
+obj_properties = setfield(obj_properties, "radius 2",1.31641e-08);
+obj_properties = setfield(obj_properties, "radius 3",1.31641e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",6.55097e-07);
+obj_properties = setfield(obj_properties, "y",-8.38758e-07);
+obj_properties = setfield(obj_properties, "z",-8.46786e-08);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",1.60558e-08);
+obj_properties = setfield(obj_properties, "radius 2",1.60558e-08);
+obj_properties = setfield(obj_properties, "radius 3",1.60558e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",-4.42454e-07);
+obj_properties = setfield(obj_properties, "y",-8.97292e-07);
+obj_properties = setfield(obj_properties, "z",-5.96815e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",3.28994e-08);
+obj_properties = setfield(obj_properties, "radius 2",3.28994e-08);
+obj_properties = setfield(obj_properties, "radius 3",3.28994e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",-3.74873e-07);
+obj_properties = setfield(obj_properties, "y",6.33586e-08);
+obj_properties = setfield(obj_properties, "z",-3.09928e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",2.29278e-08);
+obj_properties = setfield(obj_properties, "radius 2",2.29278e-08);
+obj_properties = setfield(obj_properties, "radius 3",2.29278e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",8.78695e-07);
+obj_properties = setfield(obj_properties, "y",6.31586e-07);
+obj_properties = setfield(obj_properties, "z",-1.99013e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",1.88409e-08);
+obj_properties = setfield(obj_properties, "radius 2",1.88409e-08);
+obj_properties = setfield(obj_properties, "radius 3",1.88409e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",-1.79329e-07);
+obj_properties = setfield(obj_properties, "y",-3.7317e-07);
+obj_properties = setfield(obj_properties, "z",1.31776e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",3.26359e-08);
+obj_properties = setfield(obj_properties, "radius 2",3.26359e-08);
+obj_properties = setfield(obj_properties, "radius 3",3.26359e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",8.34294e-07);
+obj_properties = setfield(obj_properties, "y",1.01232e-06);
+obj_properties = setfield(obj_properties, "z",-3.26349e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",4.89798e-08);
+obj_properties = setfield(obj_properties, "radius 2",4.89798e-08);
+obj_properties = setfield(obj_properties, "radius 3",4.89798e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",-5.44944e-07);
+obj_properties = setfield(obj_properties, "y",7.69121e-07);
+obj_properties = setfield(obj_properties, "z",-4.10469e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",2.04369e-08);
+obj_properties = setfield(obj_properties, "radius 2",2.04369e-08);
+obj_properties = setfield(obj_properties, "radius 3",2.04369e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",-3.70775e-07);
+obj_properties = setfield(obj_properties, "y",1.56655e-07);
+obj_properties = setfield(obj_properties, "z",2.71181e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",2.35654e-08);
+obj_properties = setfield(obj_properties, "radius 2",2.35654e-08);
+obj_properties = setfield(obj_properties, "radius 3",2.35654e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",8.42609e-07);
+obj_properties = setfield(obj_properties, "y",-5.24024e-07);
+obj_properties = setfield(obj_properties, "z",1.24157e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",4.27481e-08);
+obj_properties = setfield(obj_properties, "radius 2",4.27481e-08);
+obj_properties = setfield(obj_properties, "radius 3",4.27481e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",-2.98275e-07);
+obj_properties = setfield(obj_properties, "y",2.95925e-08);
+obj_properties = setfield(obj_properties, "z",1.06502e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",3.37365e-08);
+obj_properties = setfield(obj_properties, "radius 2",3.37365e-08);
+obj_properties = setfield(obj_properties, "radius 3",3.37365e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",-5.34665e-07);
+obj_properties = setfield(obj_properties, "y",-9.4474e-07);
+obj_properties = setfield(obj_properties, "z",-5.4938e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",3.93978e-08);
+obj_properties = setfield(obj_properties, "radius 2",3.93978e-08);
+obj_properties = setfield(obj_properties, "radius 3",3.93978e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",-5.78634e-07);
+obj_properties = setfield(obj_properties, "y",-8.97369e-07);
+obj_properties = setfield(obj_properties, "z",-3.00117e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",3.11975e-08);
+obj_properties = setfield(obj_properties, "radius 2",3.11975e-08);
+obj_properties = setfield(obj_properties, "radius 3",3.11975e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",3.40176e-07);
+obj_properties = setfield(obj_properties, "y",3.36488e-07);
+obj_properties = setfield(obj_properties, "z",9.4517e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",2.633e-08);
+obj_properties = setfield(obj_properties, "radius 2",2.633e-08);
+obj_properties = setfield(obj_properties, "radius 3",2.633e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",5.26606e-07);
+obj_properties = setfield(obj_properties, "y",5.04571e-07);
+obj_properties = setfield(obj_properties, "z",-5.16154e-08);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",1.12414e-08);
+obj_properties = setfield(obj_properties, "radius 2",1.12414e-08);
+obj_properties = setfield(obj_properties, "radius 3",1.12414e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",3.82094e-07);
+obj_properties = setfield(obj_properties, "y",-1.04278e-06);
+obj_properties = setfield(obj_properties, "z",-4.40359e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",3.57274e-08);
+obj_properties = setfield(obj_properties, "radius 2",3.57274e-08);
+obj_properties = setfield(obj_properties, "radius 3",3.57274e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",-1.70163e-08);
+obj_properties = setfield(obj_properties, "y",3.14811e-07);
+obj_properties = setfield(obj_properties, "z",-3.1376e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",4.03019e-08);
+obj_properties = setfield(obj_properties, "radius 2",4.03019e-08);
+obj_properties = setfield(obj_properties, "radius 3",4.03019e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",8.57447e-07);
+obj_properties = setfield(obj_properties, "y",8.08662e-08);
+obj_properties = setfield(obj_properties, "z",-4.96174e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",2.62228e-08);
+obj_properties = setfield(obj_properties, "radius 2",2.62228e-08);
+obj_properties = setfield(obj_properties, "radius 3",2.62228e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",3.74655e-07);
+obj_properties = setfield(obj_properties, "y",-4.53413e-08);
+obj_properties = setfield(obj_properties, "z",3.55065e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",3.86671e-08);
+obj_properties = setfield(obj_properties, "radius 2",3.86671e-08);
+obj_properties = setfield(obj_properties, "radius 3",3.86671e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",4.30697e-08);
+obj_properties = setfield(obj_properties, "y",-2.66409e-07);
+obj_properties = setfield(obj_properties, "z",5.14097e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",2.44154e-08);
+obj_properties = setfield(obj_properties, "radius 2",2.44154e-08);
+obj_properties = setfield(obj_properties, "radius 3",2.44154e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",-8.36528e-07);
+obj_properties = setfield(obj_properties, "y",-2.79083e-07);
+obj_properties = setfield(obj_properties, "z",-2.40534e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",1.33411e-08);
+obj_properties = setfield(obj_properties, "radius 2",1.33411e-08);
+obj_properties = setfield(obj_properties, "radius 3",1.33411e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",-2.15408e-07);
+obj_properties = setfield(obj_properties, "y",1.44869e-07);
+obj_properties = setfield(obj_properties, "z",5.5127e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",4.16538e-08);
+obj_properties = setfield(obj_properties, "radius 2",4.16538e-08);
+obj_properties = setfield(obj_properties, "radius 3",4.16538e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",1.06234e-06);
+obj_properties = setfield(obj_properties, "y",-5.4924e-08);
+obj_properties = setfield(obj_properties, "z",8.1833e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "alpha",1);
+obj_properties = setfield(obj_properties, "color opacity",1);
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "first axis","none");
+obj_properties = setfield(obj_properties, "grid attribute name","");
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "index units","microns");
+obj_properties = setfield(obj_properties, "make ellipsoid",0);
+obj_properties = setfield(obj_properties, "material","<Object defined dielectric>");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "override color opacity from material database",1);
+obj_properties = setfield(obj_properties, "override mesh order from material database",0);
+obj_properties = setfield(obj_properties, "radius",2.48371e-08);
+obj_properties = setfield(obj_properties, "radius 2",2.48371e-08);
+obj_properties = setfield(obj_properties, "radius 3",2.48371e-08);
+obj_properties = setfield(obj_properties, "render type","detailed");
+obj_properties = setfield(obj_properties, "second axis","none");
+obj_properties = setfield(obj_properties, "set color opacity from material database",0);
+obj_properties = setfield(obj_properties, "set mesh order from material database",1);
+obj_properties = setfield(obj_properties, "third axis","none");
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",-2.57777e-07);
+obj_properties = setfield(obj_properties, "y",-2.9563e-08);
+obj_properties = setfield(obj_properties, "z",-6.03286e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# source (DipoleSource)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "amplitude",1);
+obj_properties = setfield(obj_properties, "angle",0);
+obj_properties = setfield(obj_properties, "center wavelength",5.5e-07);
+obj_properties = setfield(obj_properties, "dipole type","Electric dipole");
+obj_properties = setfield(obj_properties, "eliminate discontinuities",1);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "name","source");
+obj_properties = setfield(obj_properties, "optimize for short pulse",0);
+obj_properties = setfield(obj_properties, "override global source settings",1);
+obj_properties = setfield(obj_properties, "phase",0);
+obj_properties = setfield(obj_properties, "phi",0);
+obj_properties = setfield(obj_properties, "record local field",1);
+obj_properties = setfield(obj_properties, "set frequency",0);
+obj_properties = setfield(obj_properties, "set time domain",0);
+obj_properties = setfield(obj_properties, "set wavelength",1);
+obj_properties = setfield(obj_properties, "theta",0);
+obj_properties = setfield(obj_properties, "type","DipoleSource");
+obj_properties = setfield(obj_properties, "use global source settings",0);
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "wavelength start",4e-07);
+obj_properties = setfield(obj_properties, "wavelength stop",7e-07);
+obj_properties = setfield(obj_properties, "x",-9e-07);
+obj_properties = setfield(obj_properties, "y",0);
+obj_properties = setfield(obj_properties, "z",0);
+
+groupscope("::model");adddipole;
+try{set(obj_properties);}
+
+# source_1 (DipoleSource)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "amplitude",1);
+obj_properties = setfield(obj_properties, "angle",0);
+obj_properties = setfield(obj_properties, "center wavelength",5.5e-07);
+obj_properties = setfield(obj_properties, "dipole type","Electric dipole");
+obj_properties = setfield(obj_properties, "eliminate discontinuities",1);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "name","source_1");
+obj_properties = setfield(obj_properties, "optimize for short pulse",0);
+obj_properties = setfield(obj_properties, "override global source settings",1);
+obj_properties = setfield(obj_properties, "phase",0);
+obj_properties = setfield(obj_properties, "phi",0);
+obj_properties = setfield(obj_properties, "record local field",1);
+obj_properties = setfield(obj_properties, "set frequency",0);
+obj_properties = setfield(obj_properties, "set time domain",0);
+obj_properties = setfield(obj_properties, "set wavelength",1);
+obj_properties = setfield(obj_properties, "theta",0);
+obj_properties = setfield(obj_properties, "type","DipoleSource");
+obj_properties = setfield(obj_properties, "use global source settings",0);
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "wavelength start",4e-07);
+obj_properties = setfield(obj_properties, "wavelength stop",7e-07);
+obj_properties = setfield(obj_properties, "x",9e-07);
+obj_properties = setfield(obj_properties, "y",0);
+obj_properties = setfield(obj_properties, "z",0);
+
+groupscope("::model");adddipole;
+try{set(obj_properties);}
+
+# source_1_1 (DipoleSource)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "amplitude",1);
+obj_properties = setfield(obj_properties, "angle",0);
+obj_properties = setfield(obj_properties, "center wavelength",5.5e-07);
+obj_properties = setfield(obj_properties, "dipole type","Electric dipole");
+obj_properties = setfield(obj_properties, "eliminate discontinuities",1);
+obj_properties = setfield(obj_properties, "enabled",0);
+obj_properties = setfield(obj_properties, "name","source_1_1");
+obj_properties = setfield(obj_properties, "optimize for short pulse",0);
+obj_properties = setfield(obj_properties, "override global source settings",1);
+obj_properties = setfield(obj_properties, "phase",0);
+obj_properties = setfield(obj_properties, "phi",0);
+obj_properties = setfield(obj_properties, "record local field",1);
+obj_properties = setfield(obj_properties, "set frequency",0);
+obj_properties = setfield(obj_properties, "set time domain",0);
+obj_properties = setfield(obj_properties, "set wavelength",1);
+obj_properties = setfield(obj_properties, "theta",0);
+obj_properties = setfield(obj_properties, "type","DipoleSource");
+obj_properties = setfield(obj_properties, "use global source settings",0);
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "wavelength start",4e-07);
+obj_properties = setfield(obj_properties, "wavelength stop",7e-07);
+obj_properties = setfield(obj_properties, "x",-1e-06);
+obj_properties = setfield(obj_properties, "y",1e-06);
+obj_properties = setfield(obj_properties, "z",0);
+
+groupscope("::model");adddipole;
+try{set(obj_properties);}
+
+# source_1_1_1 (DipoleSource)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "amplitude",1);
+obj_properties = setfield(obj_properties, "angle",0);
+obj_properties = setfield(obj_properties, "center wavelength",5.5e-07);
+obj_properties = setfield(obj_properties, "dipole type","Electric dipole");
+obj_properties = setfield(obj_properties, "eliminate discontinuities",1);
+obj_properties = setfield(obj_properties, "enabled",0);
+obj_properties = setfield(obj_properties, "name","source_1_1_1");
+obj_properties = setfield(obj_properties, "optimize for short pulse",0);
+obj_properties = setfield(obj_properties, "override global source settings",1);
+obj_properties = setfield(obj_properties, "phase",0);
+obj_properties = setfield(obj_properties, "phi",0);
+obj_properties = setfield(obj_properties, "record local field",1);
+obj_properties = setfield(obj_properties, "set frequency",0);
+obj_properties = setfield(obj_properties, "set time domain",0);
+obj_properties = setfield(obj_properties, "set wavelength",1);
+obj_properties = setfield(obj_properties, "theta",0);
+obj_properties = setfield(obj_properties, "type","DipoleSource");
+obj_properties = setfield(obj_properties, "use global source settings",0);
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "wavelength start",4e-07);
+obj_properties = setfield(obj_properties, "wavelength stop",7e-07);
+obj_properties = setfield(obj_properties, "x",-1e-06);
+obj_properties = setfield(obj_properties, "y",-1e-06);
+obj_properties = setfield(obj_properties, "z",0);
+
+groupscope("::model");adddipole;
+try{set(obj_properties);}
+
+# source_1_1_1_1 (DipoleSource)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "amplitude",1);
+obj_properties = setfield(obj_properties, "angle",0);
+obj_properties = setfield(obj_properties, "center wavelength",5.5e-07);
+obj_properties = setfield(obj_properties, "dipole type","Electric dipole");
+obj_properties = setfield(obj_properties, "eliminate discontinuities",1);
+obj_properties = setfield(obj_properties, "enabled",0);
+obj_properties = setfield(obj_properties, "name","source_1_1_1_1");
+obj_properties = setfield(obj_properties, "optimize for short pulse",0);
+obj_properties = setfield(obj_properties, "override global source settings",1);
+obj_properties = setfield(obj_properties, "phase",0);
+obj_properties = setfield(obj_properties, "phi",0);
+obj_properties = setfield(obj_properties, "record local field",1);
+obj_properties = setfield(obj_properties, "set frequency",0);
+obj_properties = setfield(obj_properties, "set time domain",0);
+obj_properties = setfield(obj_properties, "set wavelength",1);
+obj_properties = setfield(obj_properties, "theta",0);
+obj_properties = setfield(obj_properties, "type","DipoleSource");
+obj_properties = setfield(obj_properties, "use global source settings",0);
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "wavelength start",4e-07);
+obj_properties = setfield(obj_properties, "wavelength stop",7e-07);
+obj_properties = setfield(obj_properties, "x",1e-06);
+obj_properties = setfield(obj_properties, "y",-1e-06);
+obj_properties = setfield(obj_properties, "z",0);
+
+groupscope("::model");adddipole;
+try{set(obj_properties);}
+
+# FDTD (FDTD)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "allow grading in x",1);
+obj_properties = setfield(obj_properties, "allow grading in y",1);
+obj_properties = setfield(obj_properties, "allow symmetry on all boundaries",0);
+obj_properties = setfield(obj_properties, "always use complex fields",0);
+obj_properties = setfield(obj_properties, "auto shutoff max",100000);
+obj_properties = setfield(obj_properties, "background material","H2O (Water) - Palik");
+obj_properties = setfield(obj_properties, "bfast alpha",1);
+obj_properties = setfield(obj_properties, "bfast dt multiplier",0.5);
+obj_properties = setfield(obj_properties, "checkpoint at shutoff",0);
+obj_properties = setfield(obj_properties, "checkpoint during simulation",0);
+obj_properties = setfield(obj_properties, "checkpoint period",10);
+obj_properties = setfield(obj_properties, "conformal meshing refinement",7);
+obj_properties = setfield(obj_properties, "define x mesh by","mesh cells per wavelength");
+obj_properties = setfield(obj_properties, "define y mesh by","mesh cells per wavelength");
+obj_properties = setfield(obj_properties, "dimension","2D");
+obj_properties = setfield(obj_properties, "down sample time",100);
+obj_properties = setfield(obj_properties, "dt stability factor",0.99);
+obj_properties = setfield(obj_properties, "dx",1e-07);
+obj_properties = setfield(obj_properties, "dy",1e-07);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "extend structure through pml",1);
+obj_properties = setfield(obj_properties, "force symmetric x mesh",0);
+obj_properties = setfield(obj_properties, "force symmetric y mesh",0);
+obj_properties = setfield(obj_properties, "global monitor custom frequency samples",588878042500000);
+obj_properties = setfield(obj_properties, "global monitor frequency center",588878042500000);
+obj_properties = setfield(obj_properties, "global monitor frequency points",5);
+obj_properties = setfield(obj_properties, "global monitor frequency span",321206205000000);
+obj_properties = setfield(obj_properties, "global monitor maximum frequency",749481145000000);
+obj_properties = setfield(obj_properties, "global monitor maximum wavelength",7e-07);
+obj_properties = setfield(obj_properties, "global monitor minimum frequency",428274940000000);
+obj_properties = setfield(obj_properties, "global monitor minimum wavelength",4e-07);
+obj_properties = setfield(obj_properties, "global monitor sample spacing","uniform");
+obj_properties = setfield(obj_properties, "global monitor use source limits",1);
+obj_properties = setfield(obj_properties, "global monitor use wavelength spacing",0);
+obj_properties = setfield(obj_properties, "global monitor wavelength center",5.5e-07);
+obj_properties = setfield(obj_properties, "global monitor wavelength span",3e-07);
+obj_properties = setfield(obj_properties, "global source bandwidth",321206205000000);
+obj_properties = setfield(obj_properties, "global source center frequency",588878042500000);
+obj_properties = setfield(obj_properties, "global source center wavelength",5.5e-07);
+obj_properties = setfield(obj_properties, "global source eliminate discontinuities",1);
+obj_properties = setfield(obj_properties, "global source frequency",588878042500000);
+obj_properties = setfield(obj_properties, "global source frequency span",321206205000000);
+obj_properties = setfield(obj_properties, "global source frequency start",428274940000000);
+obj_properties = setfield(obj_properties, "global source frequency stop",749481145000000);
+obj_properties = setfield(obj_properties, "global source offset",7.52311e-15);
+obj_properties = setfield(obj_properties, "global source optimize for short pulse",1);
+obj_properties = setfield(obj_properties, "global source pulse type","broadband");
+obj_properties = setfield(obj_properties, "global source pulselength",2.65335e-15);
+obj_properties = setfield(obj_properties, "global source set frequency",0);
+obj_properties = setfield(obj_properties, "global source set time domain",0);
+obj_properties = setfield(obj_properties, "global source set wavelength",1);
+obj_properties = setfield(obj_properties, "global source wavelength span",3e-07);
+obj_properties = setfield(obj_properties, "global source wavelength start",4e-07);
+obj_properties = setfield(obj_properties, "global source wavelength stop",7e-07);
+obj_properties = setfield(obj_properties, "index",1);
+obj_properties = setfield(obj_properties, "max source time signal length",32768);
+obj_properties = setfield(obj_properties, "mesh accuracy",2);
+obj_properties = setfield(obj_properties, "mesh cells per wavelength",10);
+obj_properties = setfield(obj_properties, "mesh refinement","conformal variant 0");
+obj_properties = setfield(obj_properties, "mesh type","auto non-uniform");
+obj_properties = setfield(obj_properties, "meshing tolerance",8.81834e-05);
+obj_properties = setfield(obj_properties, "min mesh step",2.5e-10);
+obj_properties = setfield(obj_properties, "override simulation bandwidth for mesh generation",0);
+obj_properties = setfield(obj_properties, "param1",1);
+obj_properties = setfield(obj_properties, "param2",1);
+obj_properties = setfield(obj_properties, "pml alpha",0);
+obj_properties = setfield(obj_properties, "pml alpha polynomial",1);
+obj_properties = setfield(obj_properties, "pml kappa",2);
+obj_properties = setfield(obj_properties, "pml layers",12);
+obj_properties = setfield(obj_properties, "pml max layers",64);
+obj_properties = setfield(obj_properties, "pml min layers",12);
+obj_properties = setfield(obj_properties, "pml polynomial",3);
+obj_properties = setfield(obj_properties, "pml profile",4);
+obj_properties = setfield(obj_properties, "pml sigma",0.25);
+obj_properties = setfield(obj_properties, "pml type","uniaxial anisotropic PML (legacy)");
+obj_properties = setfield(obj_properties, "same settings on all boundaries",1);
+obj_properties = setfield(obj_properties, "set process grid",0);
+obj_properties = setfield(obj_properties, "set simulation bandwidth",0);
+obj_properties = setfield(obj_properties, "simulation frequency max",599584916000000);
+obj_properties = setfield(obj_properties, "simulation frequency min",599584916000000);
+obj_properties = setfield(obj_properties, "simulation temperature",320);
+obj_properties = setfield(obj_properties, "simulation time",4e-12);
+obj_properties = setfield(obj_properties, "simulation wavelength max",5e-07);
+obj_properties = setfield(obj_properties, "simulation wavelength min",5e-07);
+obj_properties = setfield(obj_properties, "snap pec to yee cell boundary",1);
+obj_properties = setfield(obj_properties, "type","FDTD");
+obj_properties = setfield(obj_properties, "use auto shutoff",0);
+obj_properties = setfield(obj_properties, "use divergence checking",1);
+obj_properties = setfield(obj_properties, "use early shutoff",0);
+obj_properties = setfield(obj_properties, "use legacy conformal interface detection",1);
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",0);
+obj_properties = setfield(obj_properties, "x max bc","PML");
+obj_properties = setfield(obj_properties, "x min bc","PML");
+obj_properties = setfield(obj_properties, "x span",4.1e-06);
+obj_properties = setfield(obj_properties, "y",0);
+obj_properties = setfield(obj_properties, "y max bc","PML");
+obj_properties = setfield(obj_properties, "y min bc","PML");
+obj_properties = setfield(obj_properties, "y span",4.1e-06);
+obj_properties = setfield(obj_properties, "z",0);
+obj_properties = setfield(obj_properties, "z span",1.02e-06);
+
+groupscope("::model");addfdtd;set('same settings on all boundaries', 0);
+try{set(obj_properties);}
+
+# monitor (TimeMonitor)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "min sampling per cycle",10);
+obj_properties = setfield(obj_properties, "monitor type","Point");
+obj_properties = setfield(obj_properties, "name","monitor");
+obj_properties = setfield(obj_properties, "output Ex",1);
+obj_properties = setfield(obj_properties, "output Ey",1);
+obj_properties = setfield(obj_properties, "output Ez",1);
+obj_properties = setfield(obj_properties, "output Hx",1);
+obj_properties = setfield(obj_properties, "output Hy",1);
+obj_properties = setfield(obj_properties, "output Hz",1);
+obj_properties = setfield(obj_properties, "output Px",0);
+obj_properties = setfield(obj_properties, "output Py",0);
+obj_properties = setfield(obj_properties, "output Pz",0);
+obj_properties = setfield(obj_properties, "output power",0);
+obj_properties = setfield(obj_properties, "plugin material","{00000000-0000-0000-0000-000000000000}");
+obj_properties = setfield(obj_properties, "record data in pml",0);
+obj_properties = setfield(obj_properties, "simulation type","All");
+obj_properties = setfield(obj_properties, "spatial interpolation","nearest mesh cell");
+obj_properties = setfield(obj_properties, "start time",0);
+obj_properties = setfield(obj_properties, "stop method","End of Simulation");
+obj_properties = setfield(obj_properties, "type","TimeMonitor");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",8e-07);
+obj_properties = setfield(obj_properties, "x max",8e-07);
+obj_properties = setfield(obj_properties, "x min",8e-07);
+obj_properties = setfield(obj_properties, "y",4e-07);
+obj_properties = setfield(obj_properties, "y max",4e-07);
+obj_properties = setfield(obj_properties, "y min",4e-07);
+obj_properties = setfield(obj_properties, "z",0);
+obj_properties = setfield(obj_properties, "z max",0);
+obj_properties = setfield(obj_properties, "z min",0);
+
+groupscope("::model");addtime;
+try{set(obj_properties);}
+
+# spectrum_monitor (DFTMonitor)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "apodization","Full");
+obj_properties = setfield(obj_properties, "apodization center",1e-12);
+obj_properties = setfield(obj_properties, "apodization time width",5e-13);
+obj_properties = setfield(obj_properties, "delta",10000000000000);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "frequency points",5000);
+obj_properties = setfield(obj_properties, "monitor type","Point");
+obj_properties = setfield(obj_properties, "name","spectrum_monitor");
+obj_properties = setfield(obj_properties, "output Ex",1);
+obj_properties = setfield(obj_properties, "output Ey",1);
+obj_properties = setfield(obj_properties, "output Ez",1);
+obj_properties = setfield(obj_properties, "output Hx",1);
+obj_properties = setfield(obj_properties, "output Hy",1);
+obj_properties = setfield(obj_properties, "output Hz",1);
+obj_properties = setfield(obj_properties, "output Px",0);
+obj_properties = setfield(obj_properties, "output Py",0);
+obj_properties = setfield(obj_properties, "output Pz",0);
+obj_properties = setfield(obj_properties, "output power",1);
+obj_properties = setfield(obj_properties, "override advanced global monitor settings",0);
+obj_properties = setfield(obj_properties, "override global monitor settings",1);
+obj_properties = setfield(obj_properties, "partial spectral average",0);
+obj_properties = setfield(obj_properties, "record data in pml",0);
+obj_properties = setfield(obj_properties, "sample spacing","uniform");
+obj_properties = setfield(obj_properties, "simulation type","All");
+obj_properties = setfield(obj_properties, "spatial interpolation","nearest mesh cell");
+obj_properties = setfield(obj_properties, "standard fourier transform",1);
+obj_properties = setfield(obj_properties, "total spectral average",0);
+obj_properties = setfield(obj_properties, "type","DFTMonitor");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "use source limits",1);
+obj_properties = setfield(obj_properties, "use wavelength spacing",0);
+obj_properties = setfield(obj_properties, "x",9e-07);
+obj_properties = setfield(obj_properties, "x max",9e-07);
+obj_properties = setfield(obj_properties, "x min",9e-07);
+obj_properties = setfield(obj_properties, "y",-2e-07);
+obj_properties = setfield(obj_properties, "y max",-2e-07);
+obj_properties = setfield(obj_properties, "y min",-2e-07);
+obj_properties = setfield(obj_properties, "z",0);
+obj_properties = setfield(obj_properties, "z max",0);
+obj_properties = setfield(obj_properties, "z min",0);
+
+groupscope("::model");addpower;
+try{set(obj_properties);}
+
+# movie (MovieMonitor)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "TE field component","Electric field intensity");
+obj_properties = setfield(obj_properties, "TM field component","Electric field intensity");
+obj_properties = setfield(obj_properties, "down sample X",1);
+obj_properties = setfield(obj_properties, "down sample Y",1);
+obj_properties = setfield(obj_properties, "draw structure outline",1);
+obj_properties = setfield(obj_properties, "enabled",0);
+obj_properties = setfield(obj_properties, "field component","Electric field intensity");
+obj_properties = setfield(obj_properties, "frame rate",30);
+obj_properties = setfield(obj_properties, "horizontal resolution",1080);
+obj_properties = setfield(obj_properties, "lock aspect ratio",1);
+obj_properties = setfield(obj_properties, "min sampling per cycle",10);
+obj_properties = setfield(obj_properties, "monitor type","2D Z-normal");
+obj_properties = setfield(obj_properties, "name","movie");
+obj_properties = setfield(obj_properties, "record data in pml",0);
+obj_properties = setfield(obj_properties, "scale",1);
+obj_properties = setfield(obj_properties, "simulation type","All");
+obj_properties = setfield(obj_properties, "type","MovieMonitor");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",0);
+obj_properties = setfield(obj_properties, "x span",1.1e-05);
+obj_properties = setfield(obj_properties, "y",0);
+obj_properties = setfield(obj_properties, "y span",1.1e-05);
+obj_properties = setfield(obj_properties, "z",0);
+obj_properties = setfield(obj_properties, "z max",0);
+obj_properties = setfield(obj_properties, "z min",0);
+
+groupscope("::model");addmovie;
+try{set(obj_properties);}
+
+# mesh (Mesh)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "based on a structure",0);
+obj_properties = setfield(obj_properties, "buffer",0);
+obj_properties = setfield(obj_properties, "directly defined",1);
+obj_properties = setfield(obj_properties, "dx",2e-08);
+obj_properties = setfield(obj_properties, "dy",2e-08);
+obj_properties = setfield(obj_properties, "dz",2e-08);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "name","mesh");
+obj_properties = setfield(obj_properties, "override x mesh",1);
+obj_properties = setfield(obj_properties, "override y mesh",1);
+obj_properties = setfield(obj_properties, "override z mesh",1);
+obj_properties = setfield(obj_properties, "set equivalent index",0);
+obj_properties = setfield(obj_properties, "set maximum mesh step",1);
+obj_properties = setfield(obj_properties, "structure","");
+obj_properties = setfield(obj_properties, "type","Mesh");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "x",0);
+obj_properties = setfield(obj_properties, "x span",2.5e-06);
+obj_properties = setfield(obj_properties, "y",0);
+obj_properties = setfield(obj_properties, "y span",2.5e-06);
+obj_properties = setfield(obj_properties, "z",0);
+obj_properties = setfield(obj_properties, "z span",2.5e-06);
+
+groupscope("::model");addmesh;
+try{set(obj_properties);}
+
+# 417nm_monitor (DFTMonitor)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "apodization","Full");
+obj_properties = setfield(obj_properties, "apodization center",1e-12);
+obj_properties = setfield(obj_properties, "apodization time width",5e-13);
+obj_properties = setfield(obj_properties, "delta",10000000000000);
+obj_properties = setfield(obj_properties, "down sample X",1);
+obj_properties = setfield(obj_properties, "down sample Y",1);
+obj_properties = setfield(obj_properties, "enabled",1);
+obj_properties = setfield(obj_properties, "frequency points",1);
+obj_properties = setfield(obj_properties, "monitor type","2D Z-normal");
+obj_properties = setfield(obj_properties, "name","417nm_monitor");
+obj_properties = setfield(obj_properties, "output Ex",1);
+obj_properties = setfield(obj_properties, "output Ey",1);
+obj_properties = setfield(obj_properties, "output Ez",1);
+obj_properties = setfield(obj_properties, "output Hx",1);
+obj_properties = setfield(obj_properties, "output Hy",1);
+obj_properties = setfield(obj_properties, "output Hz",1);
+obj_properties = setfield(obj_properties, "output Px",0);
+obj_properties = setfield(obj_properties, "output Py",0);
+obj_properties = setfield(obj_properties, "output Pz",0);
+obj_properties = setfield(obj_properties, "output power",1);
+obj_properties = setfield(obj_properties, "override advanced global monitor settings",0);
+obj_properties = setfield(obj_properties, "override global monitor settings",1);
+obj_properties = setfield(obj_properties, "partial spectral average",0);
+obj_properties = setfield(obj_properties, "record data in pml",0);
+obj_properties = setfield(obj_properties, "sample spacing","uniform");
+obj_properties = setfield(obj_properties, "simulation type","All");
+obj_properties = setfield(obj_properties, "spatial interpolation","specified position");
+obj_properties = setfield(obj_properties, "standard fourier transform",1);
+obj_properties = setfield(obj_properties, "total spectral average",0);
+obj_properties = setfield(obj_properties, "type","DFTMonitor");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "use source limits",0);
+obj_properties = setfield(obj_properties, "use wavelength spacing",0);
+obj_properties = setfield(obj_properties, "wavelength center",4.17e-07);
+obj_properties = setfield(obj_properties, "wavelength span",0);
+obj_properties = setfield(obj_properties, "x",0);
+obj_properties = setfield(obj_properties, "x span",3e-06);
+obj_properties = setfield(obj_properties, "y",0);
+obj_properties = setfield(obj_properties, "y span",3e-06);
+obj_properties = setfield(obj_properties, "z",0);
+obj_properties = setfield(obj_properties, "z max",0);
+obj_properties = setfield(obj_properties, "z min",0);
+
+groupscope("::model");addpower;
+try{set(obj_properties);}
+
+# 471nm_monitor (DFTMonitor)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "apodization","Full");
+obj_properties = setfield(obj_properties, "apodization center",1e-12);
+obj_properties = setfield(obj_properties, "apodization time width",5e-13);
+obj_properties = setfield(obj_properties, "delta",10000000000000);
+obj_properties = setfield(obj_properties, "down sample X",1);
+obj_properties = setfield(obj_properties, "down sample Y",1);
+obj_properties = setfield(obj_properties, "enabled",0);
+obj_properties = setfield(obj_properties, "frequency points",1);
+obj_properties = setfield(obj_properties, "monitor type","2D Z-normal");
+obj_properties = setfield(obj_properties, "name","471nm_monitor");
+obj_properties = setfield(obj_properties, "output Ex",1);
+obj_properties = setfield(obj_properties, "output Ey",1);
+obj_properties = setfield(obj_properties, "output Ez",1);
+obj_properties = setfield(obj_properties, "output Hx",1);
+obj_properties = setfield(obj_properties, "output Hy",1);
+obj_properties = setfield(obj_properties, "output Hz",1);
+obj_properties = setfield(obj_properties, "output Px",0);
+obj_properties = setfield(obj_properties, "output Py",0);
+obj_properties = setfield(obj_properties, "output Pz",0);
+obj_properties = setfield(obj_properties, "output power",1);
+obj_properties = setfield(obj_properties, "override advanced global monitor settings",0);
+obj_properties = setfield(obj_properties, "override global monitor settings",1);
+obj_properties = setfield(obj_properties, "partial spectral average",0);
+obj_properties = setfield(obj_properties, "record data in pml",0);
+obj_properties = setfield(obj_properties, "sample spacing","uniform");
+obj_properties = setfield(obj_properties, "simulation type","All");
+obj_properties = setfield(obj_properties, "spatial interpolation","specified position");
+obj_properties = setfield(obj_properties, "standard fourier transform",1);
+obj_properties = setfield(obj_properties, "total spectral average",0);
+obj_properties = setfield(obj_properties, "type","DFTMonitor");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "use source limits",0);
+obj_properties = setfield(obj_properties, "use wavelength spacing",0);
+obj_properties = setfield(obj_properties, "wavelength center",4.71e-07);
+obj_properties = setfield(obj_properties, "wavelength span",0);
+obj_properties = setfield(obj_properties, "x",0);
+obj_properties = setfield(obj_properties, "x span",3e-06);
+obj_properties = setfield(obj_properties, "y",0);
+obj_properties = setfield(obj_properties, "y span",3e-06);
+obj_properties = setfield(obj_properties, "z",0);
+obj_properties = setfield(obj_properties, "z max",0);
+obj_properties = setfield(obj_properties, "z min",0);
+
+groupscope("::model");addpower;
+try{set(obj_properties);}
+
+# 526nm_monitor (DFTMonitor)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "apodization","Full");
+obj_properties = setfield(obj_properties, "apodization center",1e-12);
+obj_properties = setfield(obj_properties, "apodization time width",5e-13);
+obj_properties = setfield(obj_properties, "delta",10000000000000);
+obj_properties = setfield(obj_properties, "down sample X",1);
+obj_properties = setfield(obj_properties, "down sample Y",1);
+obj_properties = setfield(obj_properties, "enabled",0);
+obj_properties = setfield(obj_properties, "frequency points",1);
+obj_properties = setfield(obj_properties, "monitor type","2D Z-normal");
+obj_properties = setfield(obj_properties, "name","526nm_monitor");
+obj_properties = setfield(obj_properties, "output Ex",1);
+obj_properties = setfield(obj_properties, "output Ey",1);
+obj_properties = setfield(obj_properties, "output Ez",1);
+obj_properties = setfield(obj_properties, "output Hx",1);
+obj_properties = setfield(obj_properties, "output Hy",1);
+obj_properties = setfield(obj_properties, "output Hz",1);
+obj_properties = setfield(obj_properties, "output Px",0);
+obj_properties = setfield(obj_properties, "output Py",0);
+obj_properties = setfield(obj_properties, "output Pz",0);
+obj_properties = setfield(obj_properties, "output power",1);
+obj_properties = setfield(obj_properties, "override advanced global monitor settings",0);
+obj_properties = setfield(obj_properties, "override global monitor settings",1);
+obj_properties = setfield(obj_properties, "partial spectral average",0);
+obj_properties = setfield(obj_properties, "record data in pml",0);
+obj_properties = setfield(obj_properties, "sample spacing","uniform");
+obj_properties = setfield(obj_properties, "simulation type","All");
+obj_properties = setfield(obj_properties, "spatial interpolation","specified position");
+obj_properties = setfield(obj_properties, "standard fourier transform",1);
+obj_properties = setfield(obj_properties, "total spectral average",0);
+obj_properties = setfield(obj_properties, "type","DFTMonitor");
+obj_properties = setfield(obj_properties, "use relative coordinates",1);
+obj_properties = setfield(obj_properties, "use source limits",0);
+obj_properties = setfield(obj_properties, "use wavelength spacing",0);
+obj_properties = setfield(obj_properties, "wavelength center",5.26e-07);
+obj_properties = setfield(obj_properties, "wavelength span",0);
+obj_properties = setfield(obj_properties, "x",0);
+obj_properties = setfield(obj_properties, "x span",3e-06);
+obj_properties = setfield(obj_properties, "y",0);
+obj_properties = setfield(obj_properties, "y span",3e-06);
+obj_properties = setfield(obj_properties, "z",0);
+obj_properties = setfield(obj_properties, "z max",0);
+obj_properties = setfield(obj_properties, "z min",0);
+
+groupscope("::model");addpower;
+try{set(obj_properties);}
+
