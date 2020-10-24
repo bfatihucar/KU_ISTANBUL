@@ -1,0 +1,3677 @@
+# Setup script to create project file using project parameters
+#clear;
+newproject;
+switchtolayout; 
+importmaterialdb("spherical-cavity_10um_fsp_export.mdf");
+
+# Global source settings (Global_Source)
+global_source_settings=struct;
+global_source_settings.bandwidth=3.21206e+14;
+global_source_settings.center_frequency=5.88878e+14;
+global_source_settings.center_wavelength=5.5e-07;
+global_source_settings.eliminate_discontinuities=1;
+global_source_settings.frequency=5.88878e+14;
+global_source_settings.frequency_span=3.21206e+14;
+global_source_settings.frequency_start=4.28275e+14;
+global_source_settings.frequency_stop=7.49481e+14;
+global_source_settings.offset=7.52311e-15;
+global_source_settings.optimize_for_short_pulse=1;
+global_source_settings.pulse_type='broadband';
+global_source_settings.pulselength=2.65335e-15;
+global_source_settings.set_frequency=0;
+global_source_settings.set_time_domain=0;
+global_source_settings.set_wavelength=1;
+global_source_settings.wavelength_span=3e-07;
+global_source_settings.wavelength_start=4e-07;
+global_source_settings.wavelength_stop=7e-07;
+
+setglobalsource("set wavelength",1);
+setglobalsource("center wavelength", global_source_settings.center_wavelength);
+setglobalsource("wavelength span", global_source_settings.wavelength_span);
+
+setglobalsource("eliminate discontinuities", global_source_settings.eliminate_discontinuities);
+setglobalsource("optimize for short pulse", global_source_settings.optimize_for_short_pulse);
+
+# Global monitor settings (Global_Monitor)
+global_monitor_settings=struct;
+global_monitor_settings.custom_frequency_samples=5.88878e+14;
+global_monitor_settings.frequency_center=5.88878e+14;
+global_monitor_settings.frequency_points=5;
+global_monitor_settings.frequency_span=3.21206e+14;
+global_monitor_settings.maximum_frequency=7.49481e+14;
+global_monitor_settings.maximum_wavelength=7e-07;
+global_monitor_settings.min_smpling_per_cycle=2;
+global_monitor_settings.minimum_frequency=4.28275e+14;
+global_monitor_settings.minimum_wavelength=4e-07;
+global_monitor_settings.sample_spacing='uniform';
+global_monitor_settings.use_source_limits=1;
+global_monitor_settings.use_wavelength_spacing=0;
+global_monitor_settings.wavelength_center=5.5e-07;
+global_monitor_settings.wavelength_span=3e-07;
+
+try{setglobalmonitor("frequency center", global_monitor_settings.frequency_center);}catch(ErrMmsg);
+try{setglobalmonitor("frequency span", global_monitor_settings.frequency_span);}catch(ErrMsg);
+try{setglobalmonitor("sample spacing", global_monitor_settings.sample_spacing);}catch(ErrMsg);
+try{setglobalmonitor("use source limits", global_monitor_settings.use_source_limits);}catch(ErrMsg);
+try{setglobalmonitor("frequency points", global_monitor_settings.frequency_points);}catch(ErrMsg);
+try{setglobalmonitor("min sampling per cycle", global_monitor_settings.min_smpling_per_cycle);}catch(ErrMsg);
+
+# Setting up simulation objects
+
+# membrane (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",1);
+obj_properties = setfield(obj_properties, "index","2");
+obj_properties = setfield(obj_properties, "name","membrane");
+obj_properties = setfield(obj_properties, "radius",5.05e-06);
+obj_properties = setfield(obj_properties, "radius 2",5.05e-06);
+obj_properties = setfield(obj_properties, "radius 3",5.05e-06);
+obj_properties = setfield(obj_properties, "type","Sphere");
+
+groupscope("::model");addsphere;
+try{set(obj_properties);}
+
+# cytoplasm (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "index","1.37");
+obj_properties = setfield(obj_properties, "name","cytoplasm");
+obj_properties = setfield(obj_properties, "radius",5e-06);
+obj_properties = setfield(obj_properties, "radius 2",5e-06);
+obj_properties = setfield(obj_properties, "radius 3",5e-06);
+obj_properties = setfield(obj_properties, "type","Sphere");
+
+groupscope("::model");addsphere;
+try{set(obj_properties);}
+
+# gauss_par_distr (Structure Group)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "name","gauss_par_distr");
+script = "deleteall;
+####################################################
+# Random particle distribution - Gaussian
+# This structure group consists of Gaussian distributed particles
+# that can vary in size. 
+#
+# Input properties
+# seed: randomizer seed
+# index: index of refraction
+# material
+# n spheres: number of particles
+# r max,r min: maximum and minimum radii of particles
+# x,y,z std: number of standard deviations half the object span covers
+# x,y,z span: The object span
+# allow overlap: If set to 1, the particles can overlap.  If zero, particles are not 
+#                allowed to overlap. It is important to realize that setting this option to zero
+#                may alter the particle distribution. 
+#
+# Tags: gaussian normal random particle distribution 
+#
+# Copyright 2012 Lumerical Solutions Inc
+#####################################################
+
+# simplify variable names by removing spaces
+n_spheres = %n spheres%;
+r_max = %r max%;
+r_min = %r min%;
+x_std = %x std%;
+y_std = %y std%;
+z_std = %z std%;
+x_span = %x span%;
+y_span = %y span%;
+z_span = %z span%;
+allow_overlap = %allow overlap%;
+
+# safety checks
+if ((r_max<r_min) or (r_max<0) or (r_min<0)) {
+  message("+'"'+"invalid radius values"+'"'+");
+  break;
+}
+if ((x_span<0) or (y_span<0) or (z_span<0)) {
+  message("+'"'+"invalid object span"+'"'+");
+  break;
+}
+if ((allow_overlap!=1) and (allow_overlap!=0)) {
+  message("+'"'+"Invalid overlap setting.  Setting 'allow overlap' to 1"+'"'+");
+  allow_overlap = 1;
+}
+
+# set random number generator seed
+randreset(seed);
+retry=n_spheres+retry; #condition to end loop if it runs too long
+xl=matrix(1,n_spheres);  #arrays to hold all the positions
+yl=matrix(1,n_spheres);
+zl=matrix(1,n_spheres);
+rl=matrix(1,n_spheres);
+n_sphere_added=0;
+
+for (i=1; i<=n_spheres; i=i+1) {
+  addSp=1;  # to add a sphere or not
+  
+  #----- distribution criteria -----
+  # Box-Muller Gaussian number generation
+  rl(i)=rand(r_min,r_max);
+  xTemp = rand(-1,1);
+  yTemp = rand(-1,1);
+  zTemp = rand(-1,1);
+  z2Temp= rand(-1,1);
+  w = xTemp^2 + yTemp^2;
+  w2= zTemp^2 + z2Temp^2;
+  if ( (w<1) & (w2<1) ) {
+    w = sqrt((-2*log(w))/w);
+    w2= sqrt((-2*log(w2))/w2);
+    xl(i) = xTemp*w*x_span/(2*x_std);  
+    yl(i) = yTemp*w*y_span/(2*y_std);
+    zl(i) = zTemp*w2*z_span/(2*z_std);     
+  #---------------------------------    
+
+    #----- check for overlaps -----
+    if (!allow_overlap) {
+      for(j=1; j<=i-1; j=j+1) {
+        dx=xl(i)-xl(j);
+        dy=yl(i)-yl(j);
+        dz=zl(i)-zl(j);  
+        dist = sqrt(dx^2 + dy^2 + dz^2);
+        if ( real(dist) >= rl(i)+rl(j) ) {   # if the distance is acceptable, add a sphere
+          addSp = addSp; 
+        } else { 
+          addSp = 0;
+          j=i;   # exit loop
+        } 
+      }
+    }
+    #------------------------------
+  } else { addSp = 0; }
+ 
+  if ( addSp ) {
+    n_sphere_added=n_sphere_added+1; #counting no. of particles added
+    addsphere;
+    set("+'"'+"material"+'"'+",material); 
+    if(get("+'"'+"material"+'"'+")=="+'"'+"<Object defined dielectric>"+'"'+") 
+      { set("+'"'+"index"+'"'+",index); }
+    set("+'"'+"radius"+'"'+",rl(i));
+    set("+'"'+"x"+'"'+",xl(i));
+    set("+'"'+"y"+'"'+",yl(i));
+    set("+'"'+"z"+'"'+",zl(i));
+    set("+'"'+"detail"+'"'+",0);  # reduce drawing detail to make graphics faster
+  } else { 
+    i=i-1;  # if the distance isn't acceptable, retry main loop
+    retry=retry-1;
+    if(retry==0) { 
+      message("+'"'+"Warning. Only "+'"'+"+num2str(n_sphere_added)+ "+'"'+" spheres are added. Increase 'retry' or 'spans'"+'"'+");
+      break;
+    } 
+  }
+}
+
+
+make_plots=0;
+if (make_plots) {
+  plot(1:n_spheres,xl,"+'"'+""+'"'+","+'"'+""+'"'+","+'"'+"X"+'"'+","+'"'+"plot points"+'"'+");
+  plot(1:n_spheres,yl,"+'"'+""+'"'+","+'"'+""+'"'+","+'"'+"Y"+'"'+","+'"'+"plot points"+'"'+");
+  plot(1:n_spheres,zl,"+'"'+""+'"'+","+'"'+""+'"'+","+'"'+"Z"+'"'+","+'"'+"plot points"+'"'+");
+}
+";
+obj_properties = setfield(obj_properties, "script",script);
+obj_properties = setfield(obj_properties, "type","Structure Group");
+
+groupscope("::model");addstructuregroup;
+try{set(obj_properties);}
+
+adduserprop("allow overlap",0,0);
+
+adduserprop("index",0,1.5);
+
+adduserprop("material",1,"<Object defined dielectric>");
+
+adduserprop("n spheres",0,200);
+
+adduserprop("r max",0,1e-07);
+
+adduserprop("r min",0,5e-08);
+
+adduserprop("retry",0,1000);
+
+adduserprop("seed",0,1234);
+
+adduserprop("x span",0,1e-05);
+
+adduserprop("x std",0,3);
+
+adduserprop("y span",0,1e-05);
+
+adduserprop("y std",0,3);
+
+adduserprop("z span",0,1e-05);
+
+adduserprop("z std",0,3);
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.9576e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.9576e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.9576e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-7.57045e-08);
+obj_properties = setfield(obj_properties, "y",3.95671e-06);
+obj_properties = setfield(obj_properties, "z",2.15556e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",8.06056e-08);
+obj_properties = setfield(obj_properties, "radius 2",8.06056e-08);
+obj_properties = setfield(obj_properties, "radius 3",8.06056e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.18041e-06);
+obj_properties = setfield(obj_properties, "y",1.12251e-06);
+obj_properties = setfield(obj_properties, "z",6.16034e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.36296e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.36296e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.36296e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-1.21391e-06);
+obj_properties = setfield(obj_properties, "y",-7.76707e-07);
+obj_properties = setfield(obj_properties, "z",-9.38299e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.78909e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.78909e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.78909e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-5.39052e-07);
+obj_properties = setfield(obj_properties, "y",1.10128e-09);
+obj_properties = setfield(obj_properties, "z",-2.38612e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.65508e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.65508e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.65508e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.05218e-06);
+obj_properties = setfield(obj_properties, "y",1.49708e-06);
+obj_properties = setfield(obj_properties, "z",-4.2136e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.80598e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.80598e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.80598e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-1.14862e-06);
+obj_properties = setfield(obj_properties, "y",7.97596e-09);
+obj_properties = setfield(obj_properties, "z",-5.65943e-08);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.11072e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.11072e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.11072e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.61839e-06);
+obj_properties = setfield(obj_properties, "y",-1.24138e-06);
+obj_properties = setfield(obj_properties, "z",8.1216e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.9357e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.9357e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.9357e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-4.9799e-07);
+obj_properties = setfield(obj_properties, "y",-1.45232e-06);
+obj_properties = setfield(obj_properties, "z",1.09474e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",8.25689e-08);
+obj_properties = setfield(obj_properties, "radius 2",8.25689e-08);
+obj_properties = setfield(obj_properties, "radius 3",8.25689e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-1.69758e-06);
+obj_properties = setfield(obj_properties, "y",-3.6917e-06);
+obj_properties = setfield(obj_properties, "z",3.20983e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",8.95311e-08);
+obj_properties = setfield(obj_properties, "radius 2",8.95311e-08);
+obj_properties = setfield(obj_properties, "radius 3",8.95311e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-3.25566e-06);
+obj_properties = setfield(obj_properties, "y",-6.07245e-07);
+obj_properties = setfield(obj_properties, "z",3.12572e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.20278e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.20278e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.20278e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-1.89757e-06);
+obj_properties = setfield(obj_properties, "y",2.56321e-07);
+obj_properties = setfield(obj_properties, "z",3.07348e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",8.52291e-08);
+obj_properties = setfield(obj_properties, "radius 2",8.52291e-08);
+obj_properties = setfield(obj_properties, "radius 3",8.52291e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-9.35832e-07);
+obj_properties = setfield(obj_properties, "y",-2.1304e-06);
+obj_properties = setfield(obj_properties, "z",-3.68838e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.64773e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.64773e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.64773e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",4.03142e-07);
+obj_properties = setfield(obj_properties, "y",9.63858e-07);
+obj_properties = setfield(obj_properties, "z",1.15005e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.66655e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.66655e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.66655e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-1.88159e-07);
+obj_properties = setfield(obj_properties, "y",-8.34264e-07);
+obj_properties = setfield(obj_properties, "z",-2.72402e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.15076e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.15076e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.15076e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-1.22822e-06);
+obj_properties = setfield(obj_properties, "y",1.90746e-06);
+obj_properties = setfield(obj_properties, "z",1.25832e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.55947e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.55947e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.55947e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-1.22936e-06);
+obj_properties = setfield(obj_properties, "y",3.1447e-07);
+obj_properties = setfield(obj_properties, "z",2.91524e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.42625e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.42625e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.42625e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",2.20781e-06);
+obj_properties = setfield(obj_properties, "y",1.04345e-06);
+obj_properties = setfield(obj_properties, "z",-3.84868e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",8.69262e-08);
+obj_properties = setfield(obj_properties, "radius 2",8.69262e-08);
+obj_properties = setfield(obj_properties, "radius 3",8.69262e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",2.90383e-06);
+obj_properties = setfield(obj_properties, "y",1.48102e-06);
+obj_properties = setfield(obj_properties, "z",-3.39043e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.49983e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.49983e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.49983e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",2.64997e-06);
+obj_properties = setfield(obj_properties, "y",-9.58898e-07);
+obj_properties = setfield(obj_properties, "z",6.5115e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.18447e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.18447e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.18447e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",9.09819e-07);
+obj_properties = setfield(obj_properties, "y",2.27695e-07);
+obj_properties = setfield(obj_properties, "z",2.60718e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.65777e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.65777e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.65777e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",6.93822e-07);
+obj_properties = setfield(obj_properties, "y",-1.82837e-06);
+obj_properties = setfield(obj_properties, "z",8.20415e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.38271e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.38271e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.38271e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",4.99811e-07);
+obj_properties = setfield(obj_properties, "y",1.43393e-06);
+obj_properties = setfield(obj_properties, "z",-2.19473e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.76286e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.76286e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.76286e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-2.06069e-06);
+obj_properties = setfield(obj_properties, "y",4.29094e-07);
+obj_properties = setfield(obj_properties, "z",-1.8299e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.5128e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.5128e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.5128e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",2.4836e-06);
+obj_properties = setfield(obj_properties, "y",3.24931e-07);
+obj_properties = setfield(obj_properties, "z",-9.53188e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.62854e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.62854e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.62854e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-7.18223e-07);
+obj_properties = setfield(obj_properties, "y",-6.41404e-07);
+obj_properties = setfield(obj_properties, "z",3.15494e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.26308e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.26308e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.26308e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",2.20256e-06);
+obj_properties = setfield(obj_properties, "y",-1.67931e-06);
+obj_properties = setfield(obj_properties, "z",2.08551e-08);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",8.63329e-08);
+obj_properties = setfield(obj_properties, "radius 2",8.63329e-08);
+obj_properties = setfield(obj_properties, "radius 3",8.63329e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",4.44654e-07);
+obj_properties = setfield(obj_properties, "y",7.32566e-07);
+obj_properties = setfield(obj_properties, "z",-3.83196e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.39552e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.39552e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.39552e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",2.18366e-06);
+obj_properties = setfield(obj_properties, "y",-2.79586e-06);
+obj_properties = setfield(obj_properties, "z",-2.82262e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.75698e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.75698e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.75698e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-1.47485e-06);
+obj_properties = setfield(obj_properties, "y",-2.99097e-06);
+obj_properties = setfield(obj_properties, "z",-1.98938e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.86242e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.86242e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.86242e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-1.24958e-06);
+obj_properties = setfield(obj_properties, "y",2.11195e-07);
+obj_properties = setfield(obj_properties, "z",-1.03309e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.61597e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.61597e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.61597e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",2.92898e-06);
+obj_properties = setfield(obj_properties, "y",2.10529e-06);
+obj_properties = setfield(obj_properties, "z",-6.63377e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.10511e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.10511e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.10511e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-5.97763e-07);
+obj_properties = setfield(obj_properties, "y",-1.2439e-06);
+obj_properties = setfield(obj_properties, "z",4.39254e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.82949e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.82949e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.82949e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",2.78098e-06);
+obj_properties = setfield(obj_properties, "y",3.37439e-06);
+obj_properties = setfield(obj_properties, "z",-1.08783e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.87248e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.87248e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.87248e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-1.81648e-06);
+obj_properties = setfield(obj_properties, "y",2.56374e-06);
+obj_properties = setfield(obj_properties, "z",-1.36823e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.30462e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.30462e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.30462e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-1.23592e-06);
+obj_properties = setfield(obj_properties, "y",5.22183e-07);
+obj_properties = setfield(obj_properties, "z",9.03938e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.69568e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.69568e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.69568e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",2.8087e-06);
+obj_properties = setfield(obj_properties, "y",-1.74675e-06);
+obj_properties = setfield(obj_properties, "z",4.13856e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.09352e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.09352e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.09352e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-9.94249e-07);
+obj_properties = setfield(obj_properties, "y",9.86417e-08);
+obj_properties = setfield(obj_properties, "z",3.55006e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.96706e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.96706e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.96706e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-1.78222e-06);
+obj_properties = setfield(obj_properties, "y",-3.14913e-06);
+obj_properties = setfield(obj_properties, "z",-1.83127e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",8.67473e-08);
+obj_properties = setfield(obj_properties, "radius 2",8.67473e-08);
+obj_properties = setfield(obj_properties, "radius 3",8.67473e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-1.92878e-06);
+obj_properties = setfield(obj_properties, "y",-2.99123e-06);
+obj_properties = setfield(obj_properties, "z",-1.00039e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.64968e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.64968e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.64968e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.13392e-06);
+obj_properties = setfield(obj_properties, "y",1.12163e-06);
+obj_properties = setfield(obj_properties, "z",3.15057e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.04124e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.04124e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.04124e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.75535e-06);
+obj_properties = setfield(obj_properties, "y",1.6819e-06);
+obj_properties = setfield(obj_properties, "z",-1.72051e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.15517e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.15517e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.15517e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.27365e-06);
+obj_properties = setfield(obj_properties, "y",-3.47594e-06);
+obj_properties = setfield(obj_properties, "z",-1.46786e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",8.21593e-08);
+obj_properties = setfield(obj_properties, "radius 2",8.21593e-08);
+obj_properties = setfield(obj_properties, "radius 3",8.21593e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-5.6721e-08);
+obj_properties = setfield(obj_properties, "y",1.04937e-06);
+obj_properties = setfield(obj_properties, "z",-1.04587e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",8.78774e-08);
+obj_properties = setfield(obj_properties, "radius 2",8.78774e-08);
+obj_properties = setfield(obj_properties, "radius 3",8.78774e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",2.85816e-06);
+obj_properties = setfield(obj_properties, "y",2.69554e-07);
+obj_properties = setfield(obj_properties, "z",-1.65391e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.02785e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.02785e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.02785e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.24885e-06);
+obj_properties = setfield(obj_properties, "y",-1.51138e-07);
+obj_properties = setfield(obj_properties, "z",1.18355e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",8.58339e-08);
+obj_properties = setfield(obj_properties, "radius 2",8.58339e-08);
+obj_properties = setfield(obj_properties, "radius 3",8.58339e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.43566e-07);
+obj_properties = setfield(obj_properties, "y",-8.8803e-07);
+obj_properties = setfield(obj_properties, "z",1.71366e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.80193e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.80193e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.80193e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-2.78843e-06);
+obj_properties = setfield(obj_properties, "y",-9.30276e-07);
+obj_properties = setfield(obj_properties, "z",-8.0178e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.41764e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.41764e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.41764e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-7.18026e-07);
+obj_properties = setfield(obj_properties, "y",4.82896e-07);
+obj_properties = setfield(obj_properties, "z",1.83757e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",8.95673e-08);
+obj_properties = setfield(obj_properties, "radius 2",8.95673e-08);
+obj_properties = setfield(obj_properties, "radius 3",8.95673e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",3.54112e-06);
+obj_properties = setfield(obj_properties, "y",-1.8308e-07);
+obj_properties = setfield(obj_properties, "z",2.72777e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.85463e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.85463e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.85463e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-8.59255e-07);
+obj_properties = setfield(obj_properties, "y",-9.85434e-08);
+obj_properties = setfield(obj_properties, "z",-2.01095e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.52139e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.52139e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.52139e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-1.36393e-06);
+obj_properties = setfield(obj_properties, "y",1.2139e-06);
+obj_properties = setfield(obj_properties, "z",-3.54264e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.36455e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.36455e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.36455e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-1.97864e-06);
+obj_properties = setfield(obj_properties, "y",1.07003e-06);
+obj_properties = setfield(obj_properties, "z",-1.3611e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.48464e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.48464e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.48464e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-2.40139e-06);
+obj_properties = setfield(obj_properties, "y",-2.29158e-06);
+obj_properties = setfield(obj_properties, "z",4.14639e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.01095e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.01095e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.01095e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-1.37795e-07);
+obj_properties = setfield(obj_properties, "y",-9.10648e-07);
+obj_properties = setfield(obj_properties, "z",6.31554e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.13586e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.13586e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.13586e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",7.49265e-07);
+obj_properties = setfield(obj_properties, "y",2.21133e-06);
+obj_properties = setfield(obj_properties, "z",-1.42918e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.2675e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.2675e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.2675e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",3.36914e-07);
+obj_properties = setfield(obj_properties, "y",-1.24573e-06);
+obj_properties = setfield(obj_properties, "z",3.84183e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",8.14746e-08);
+obj_properties = setfield(obj_properties, "radius 2",8.14746e-08);
+obj_properties = setfield(obj_properties, "radius 3",8.14746e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",9.4107e-07);
+obj_properties = setfield(obj_properties, "y",4.22773e-07);
+obj_properties = setfield(obj_properties, "z",1.33183e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.18592e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.18592e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.18592e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",2.44976e-06);
+obj_properties = setfield(obj_properties, "y",2.61029e-07);
+obj_properties = setfield(obj_properties, "z",1.64389e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",8.63898e-08);
+obj_properties = setfield(obj_properties, "radius 2",8.63898e-08);
+obj_properties = setfield(obj_properties, "radius 3",8.63898e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.77731e-06);
+obj_properties = setfield(obj_properties, "y",2.12202e-06);
+obj_properties = setfield(obj_properties, "z",-1.90536e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.66688e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.66688e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.66688e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",4.73183e-06);
+obj_properties = setfield(obj_properties, "y",2.04173e-06);
+obj_properties = setfield(obj_properties, "z",2.68082e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.68775e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.68775e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.68775e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-8.06881e-07);
+obj_properties = setfield(obj_properties, "y",8.03583e-08);
+obj_properties = setfield(obj_properties, "z",4.56873e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.25126e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.25126e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.25126e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-2.64653e-08);
+obj_properties = setfield(obj_properties, "y",1.06293e-06);
+obj_properties = setfield(obj_properties, "z",1.92437e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.20951e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.20951e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.20951e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",2.83575e-07);
+obj_properties = setfield(obj_properties, "y",-2.14047e-06);
+obj_properties = setfield(obj_properties, "z",2.40351e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.94173e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.94173e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.94173e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.23222e-06);
+obj_properties = setfield(obj_properties, "y",4.4037e-07);
+obj_properties = setfield(obj_properties, "z",-1.94886e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.28333e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.28333e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.28333e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-1.41946e-06);
+obj_properties = setfield(obj_properties, "y",8.42506e-07);
+obj_properties = setfield(obj_properties, "z",-2.42162e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.65004e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.65004e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.65004e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.2917e-06);
+obj_properties = setfield(obj_properties, "y",3.34115e-07);
+obj_properties = setfield(obj_properties, "z",-5.92841e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.16462e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.16462e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.16462e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.63922e-06);
+obj_properties = setfield(obj_properties, "y",-3.14941e-06);
+obj_properties = setfield(obj_properties, "z",7.32576e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.98827e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.98827e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.98827e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-7.90982e-07);
+obj_properties = setfield(obj_properties, "y",-9.43415e-07);
+obj_properties = setfield(obj_properties, "z",-3.05091e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",8.57007e-08);
+obj_properties = setfield(obj_properties, "radius 2",8.57007e-08);
+obj_properties = setfield(obj_properties, "radius 3",8.57007e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-8.74129e-07);
+obj_properties = setfield(obj_properties, "y",-1.03883e-06);
+obj_properties = setfield(obj_properties, "z",-2.91789e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.45083e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.45083e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.45083e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-2.03842e-06);
+obj_properties = setfield(obj_properties, "y",1.50101e-07);
+obj_properties = setfield(obj_properties, "z",-2.07866e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.41819e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.41819e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.41819e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",2.66567e-06);
+obj_properties = setfield(obj_properties, "y",3.79582e-07);
+obj_properties = setfield(obj_properties, "z",-1.08229e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.57303e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.57303e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.57303e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.33926e-06);
+obj_properties = setfield(obj_properties, "y",-5.68991e-07);
+obj_properties = setfield(obj_properties, "z",6.1847e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.26301e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.26301e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.26301e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",2.39201e-06);
+obj_properties = setfield(obj_properties, "y",3.13768e-06);
+obj_properties = setfield(obj_properties, "z",-1.27949e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.63065e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.63065e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.63065e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.37358e-06);
+obj_properties = setfield(obj_properties, "y",3.85491e-06);
+obj_properties = setfield(obj_properties, "z",1.65524e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.72581e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.72581e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.72581e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-9.35519e-07);
+obj_properties = setfield(obj_properties, "y",-2.68638e-07);
+obj_properties = setfield(obj_properties, "z",-1.00946e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.25986e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.25986e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.25986e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-4.09308e-06);
+obj_properties = setfield(obj_properties, "y",6.18757e-07);
+obj_properties = setfield(obj_properties, "z",-1.26597e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.63591e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.63591e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.63591e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.4226e-06);
+obj_properties = setfield(obj_properties, "y",5.09022e-07);
+obj_properties = setfield(obj_properties, "z",5.06547e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.7662e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.7662e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.7662e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-2.36518e-07);
+obj_properties = setfield(obj_properties, "y",1.65046e-06);
+obj_properties = setfield(obj_properties, "z",-1.17297e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.59818e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.59818e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.59818e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.11776e-06);
+obj_properties = setfield(obj_properties, "y",-1.53336e-06);
+obj_properties = setfield(obj_properties, "z",-2.04912e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.99122e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.99122e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.99122e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-1.27361e-06);
+obj_properties = setfield(obj_properties, "y",-1.20243e-06);
+obj_properties = setfield(obj_properties, "z",-8.31426e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",8.6262e-08);
+obj_properties = setfield(obj_properties, "radius 2",8.6262e-08);
+obj_properties = setfield(obj_properties, "radius 3",8.6262e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-1.05727e-07);
+obj_properties = setfield(obj_properties, "y",6.71667e-07);
+obj_properties = setfield(obj_properties, "z",5.39838e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.03769e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.03769e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.03769e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.16063e-07);
+obj_properties = setfield(obj_properties, "y",6.84175e-08);
+obj_properties = setfield(obj_properties, "z",-2.22183e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",8.11481e-08);
+obj_properties = setfield(obj_properties, "radius 2",8.11481e-08);
+obj_properties = setfield(obj_properties, "radius 3",8.11481e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.21366e-06);
+obj_properties = setfield(obj_properties, "y",-4.1837e-06);
+obj_properties = setfield(obj_properties, "z",-2.30618e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",8.42484e-08);
+obj_properties = setfield(obj_properties, "radius 2",8.42484e-08);
+obj_properties = setfield(obj_properties, "radius 3",8.42484e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-6.48924e-07);
+obj_properties = setfield(obj_properties, "y",1.75636e-07);
+obj_properties = setfield(obj_properties, "z",1.5423e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.88847e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.88847e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.88847e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.28812e-06);
+obj_properties = setfield(obj_properties, "y",-1.16619e-06);
+obj_properties = setfield(obj_properties, "z",-8.24797e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.06064e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.06064e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.06064e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-2.88759e-06);
+obj_properties = setfield(obj_properties, "y",-3.12603e-06);
+obj_properties = setfield(obj_properties, "z",-1.16978e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.1941e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.1941e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.1941e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-6.79271e-07);
+obj_properties = setfield(obj_properties, "y",1.85735e-06);
+obj_properties = setfield(obj_properties, "z",1.27255e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",8.40397e-08);
+obj_properties = setfield(obj_properties, "radius 2",8.40397e-08);
+obj_properties = setfield(obj_properties, "radius 3",8.40397e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.23723e-07);
+obj_properties = setfield(obj_properties, "y",-6.74445e-07);
+obj_properties = setfield(obj_properties, "z",-2.24846e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.43678e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.43678e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.43678e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",5.85864e-07);
+obj_properties = setfield(obj_properties, "y",-3.25589e-07);
+obj_properties = setfield(obj_properties, "z",-1.93776e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.25008e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.25008e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.25008e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",9.31832e-07);
+obj_properties = setfield(obj_properties, "y",-1.17614e-06);
+obj_properties = setfield(obj_properties, "z",-1.83603e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.31921e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.31921e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.31921e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-4.3579e-07);
+obj_properties = setfield(obj_properties, "y",2.63313e-06);
+obj_properties = setfield(obj_properties, "z",7.03262e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.23012e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.23012e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.23012e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-2.79399e-06);
+obj_properties = setfield(obj_properties, "y",-4.81107e-06);
+obj_properties = setfield(obj_properties, "z",2.25226e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.95554e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.95554e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.95554e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-8.86887e-08);
+obj_properties = setfield(obj_properties, "y",-1.34919e-07);
+obj_properties = setfield(obj_properties, "z",-1.27799e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.33288e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.33288e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.33288e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-2.33013e-06);
+obj_properties = setfield(obj_properties, "y",-1.46367e-06);
+obj_properties = setfield(obj_properties, "z",1.79862e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.74777e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.74777e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.74777e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",3.03416e-08);
+obj_properties = setfield(obj_properties, "y",8.70256e-07);
+obj_properties = setfield(obj_properties, "z",2.98348e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",8.85842e-08);
+obj_properties = setfield(obj_properties, "radius 2",8.85842e-08);
+obj_properties = setfield(obj_properties, "radius 3",8.85842e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",7.70081e-07);
+obj_properties = setfield(obj_properties, "y",9.80183e-07);
+obj_properties = setfield(obj_properties, "z",-1.76921e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.85804e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.85804e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.85804e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",6.49311e-07);
+obj_properties = setfield(obj_properties, "y",-3.77905e-07);
+obj_properties = setfield(obj_properties, "z",-2.55395e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.47484e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.47484e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.47484e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-4.57514e-07);
+obj_properties = setfield(obj_properties, "y",2.20746e-06);
+obj_properties = setfield(obj_properties, "z",1.80604e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",8.65799e-08);
+obj_properties = setfield(obj_properties, "radius 2",8.65799e-08);
+obj_properties = setfield(obj_properties, "radius 3",8.65799e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",2.84444e-07);
+obj_properties = setfield(obj_properties, "y",-9.09809e-07);
+obj_properties = setfield(obj_properties, "z",1.18747e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.41526e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.41526e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.41526e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-3.9716e-07);
+obj_properties = setfield(obj_properties, "y",-1.65448e-06);
+obj_properties = setfield(obj_properties, "z",1.10417e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.7022e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.7022e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.7022e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-5.89237e-07);
+obj_properties = setfield(obj_properties, "y",-6.45209e-07);
+obj_properties = setfield(obj_properties, "z",-2.22031e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.07252e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.07252e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.07252e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",5.35839e-07);
+obj_properties = setfield(obj_properties, "y",7.97972e-08);
+obj_properties = setfield(obj_properties, "z",1.86062e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",8.80987e-08);
+obj_properties = setfield(obj_properties, "radius 2",8.80987e-08);
+obj_properties = setfield(obj_properties, "radius 3",8.80987e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",2.77095e-06);
+obj_properties = setfield(obj_properties, "y",-9.4792e-07);
+obj_properties = setfield(obj_properties, "z",-3.02549e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.4166e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.4166e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.4166e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-2.38881e-06);
+obj_properties = setfield(obj_properties, "y",-5.48227e-07);
+obj_properties = setfield(obj_properties, "z",8.04989e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",8.30187e-08);
+obj_properties = setfield(obj_properties, "radius 2",8.30187e-08);
+obj_properties = setfield(obj_properties, "radius 3",8.30187e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",3.23422e-06);
+obj_properties = setfield(obj_properties, "y",-1.7377e-06);
+obj_properties = setfield(obj_properties, "z",7.51427e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.83541e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.83541e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.83541e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-8.34152e-07);
+obj_properties = setfield(obj_properties, "y",8.83669e-07);
+obj_properties = setfield(obj_properties, "z",-2.78422e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.68877e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.68877e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.68877e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-1.94804e-06);
+obj_properties = setfield(obj_properties, "y",8.31477e-07);
+obj_properties = setfield(obj_properties, "z",2.27745e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.13479e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.13479e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.13479e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",4.51356e-07);
+obj_properties = setfield(obj_properties, "y",-3.00474e-06);
+obj_properties = setfield(obj_properties, "z",1.02438e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.61386e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.61386e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.61386e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-1.19994e-07);
+obj_properties = setfield(obj_properties, "y",-3.54188e-06);
+obj_properties = setfield(obj_properties, "z",-2.02411e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",8.33513e-08);
+obj_properties = setfield(obj_properties, "radius 2",8.33513e-08);
+obj_properties = setfield(obj_properties, "radius 3",8.33513e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-2.8725e-06);
+obj_properties = setfield(obj_properties, "y",1.06706e-06);
+obj_properties = setfield(obj_properties, "z",-2.13564e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.37757e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.37757e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.37757e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",3.3022e-07);
+obj_properties = setfield(obj_properties, "y",2.324e-06);
+obj_properties = setfield(obj_properties, "z",-1.3194e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",8.09965e-08);
+obj_properties = setfield(obj_properties, "radius 2",8.09965e-08);
+obj_properties = setfield(obj_properties, "radius 3",8.09965e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",3.66012e-07);
+obj_properties = setfield(obj_properties, "y",1.20487e-07);
+obj_properties = setfield(obj_properties, "z",-4.85225e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.05139e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.05139e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.05139e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-6.10792e-07);
+obj_properties = setfield(obj_properties, "y",-1.51916e-06);
+obj_properties = setfield(obj_properties, "z",3.91217e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.66765e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.66765e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.66765e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-6.00725e-07);
+obj_properties = setfield(obj_properties, "y",-2.14866e-06);
+obj_properties = setfield(obj_properties, "z",3.07311e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.23576e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.23576e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.23576e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",2.5481e-06);
+obj_properties = setfield(obj_properties, "y",6.43719e-07);
+obj_properties = setfield(obj_properties, "z",-4.98458e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.03038e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.03038e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.03038e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-6.86619e-07);
+obj_properties = setfield(obj_properties, "y",-3.3001e-06);
+obj_properties = setfield(obj_properties, "z",1.38924e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.3302e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.3302e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.3302e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.65485e-06);
+obj_properties = setfield(obj_properties, "y",2.75758e-06);
+obj_properties = setfield(obj_properties, "z",-3.72206e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.7336e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.7336e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.7336e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.637e-06);
+obj_properties = setfield(obj_properties, "y",2.88419e-06);
+obj_properties = setfield(obj_properties, "z",-1.70339e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.33784e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.33784e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.33784e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",3.09947e-07);
+obj_properties = setfield(obj_properties, "y",6.82908e-07);
+obj_properties = setfield(obj_properties, "z",7.32529e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.41976e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.41976e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.41976e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-4.19471e-07);
+obj_properties = setfield(obj_properties, "y",2.37645e-07);
+obj_properties = setfield(obj_properties, "z",4.68731e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.17161e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.17161e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.17161e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",5.8219e-07);
+obj_properties = setfield(obj_properties, "y",-9.96274e-07);
+obj_properties = setfield(obj_properties, "z",-2.84367e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.21215e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.21215e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.21215e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",5.34532e-07);
+obj_properties = setfield(obj_properties, "y",-8.61069e-07);
+obj_properties = setfield(obj_properties, "z",1.07908e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.99044e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.99044e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.99044e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-7.91402e-07);
+obj_properties = setfield(obj_properties, "y",1.90813e-07);
+obj_properties = setfield(obj_properties, "z",1.30671e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.95163e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.95163e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.95163e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.7342e-06);
+obj_properties = setfield(obj_properties, "y",1.807e-06);
+obj_properties = setfield(obj_properties, "z",3.22264e-08);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",8.16312e-08);
+obj_properties = setfield(obj_properties, "radius 2",8.16312e-08);
+obj_properties = setfield(obj_properties, "radius 3",8.16312e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",5.80098e-07);
+obj_properties = setfield(obj_properties, "y",5.64555e-07);
+obj_properties = setfield(obj_properties, "z",-1.49682e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.44513e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.44513e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.44513e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-5.79496e-07);
+obj_properties = setfield(obj_properties, "y",1.33513e-06);
+obj_properties = setfield(obj_properties, "z",-2.11903e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",8.82345e-08);
+obj_properties = setfield(obj_properties, "radius 2",8.82345e-08);
+obj_properties = setfield(obj_properties, "radius 3",8.82345e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",2.07588e-06);
+obj_properties = setfield(obj_properties, "y",-1.07613e-06);
+obj_properties = setfield(obj_properties, "z",-4.34402e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.22806e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.22806e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.22806e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",2.19175e-06);
+obj_properties = setfield(obj_properties, "y",1.39691e-06);
+obj_properties = setfield(obj_properties, "z",1.4207e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.20632e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.20632e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.20632e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-6.90912e-07);
+obj_properties = setfield(obj_properties, "y",-1.90149e-06);
+obj_properties = setfield(obj_properties, "z",3.07067e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.56446e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.56446e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.56446e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",3.19368e-06);
+obj_properties = setfield(obj_properties, "y",-1.20843e-06);
+obj_properties = setfield(obj_properties, "z",-2.62269e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.82865e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.82865e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.82865e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",6.1098e-07);
+obj_properties = setfield(obj_properties, "y",6.58546e-07);
+obj_properties = setfield(obj_properties, "z",1.86087e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.6556e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.6556e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.6556e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-1.03018e-06);
+obj_properties = setfield(obj_properties, "y",-1.42406e-06);
+obj_properties = setfield(obj_properties, "z",2.50616e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.65888e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.65888e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.65888e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",3.34878e-07);
+obj_properties = setfield(obj_properties, "y",1.04651e-06);
+obj_properties = setfield(obj_properties, "z",8.87236e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.8982e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.8982e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.8982e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-5.89786e-07);
+obj_properties = setfield(obj_properties, "y",1.86016e-06);
+obj_properties = setfield(obj_properties, "z",-1.01944e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.73475e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.73475e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.73475e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-9.52265e-07);
+obj_properties = setfield(obj_properties, "y",8.05599e-07);
+obj_properties = setfield(obj_properties, "z",-3.1826e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",8.27141e-08);
+obj_properties = setfield(obj_properties, "radius 2",8.27141e-08);
+obj_properties = setfield(obj_properties, "radius 3",8.27141e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-1.97677e-06);
+obj_properties = setfield(obj_properties, "y",6.42935e-07);
+obj_properties = setfield(obj_properties, "z",-2.26278e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.1448e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.1448e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.1448e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-1.04651e-06);
+obj_properties = setfield(obj_properties, "y",6.06257e-07);
+obj_properties = setfield(obj_properties, "z",-1.07733e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.14361e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.14361e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.14361e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-4.86809e-07);
+obj_properties = setfield(obj_properties, "y",1.04643e-06);
+obj_properties = setfield(obj_properties, "z",-8.81044e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.85537e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.85537e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.85537e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-1.37184e-06);
+obj_properties = setfield(obj_properties, "y",-6.20996e-07);
+obj_properties = setfield(obj_properties, "z",-2.53029e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.24381e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.24381e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.24381e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",8.64949e-07);
+obj_properties = setfield(obj_properties, "y",1.44763e-06);
+obj_properties = setfield(obj_properties, "z",1.61775e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.05127e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.05127e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.05127e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-1.82626e-06);
+obj_properties = setfield(obj_properties, "y",1.29305e-06);
+obj_properties = setfield(obj_properties, "z",1.62137e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.35733e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.35733e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.35733e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-1.5497e-07);
+obj_properties = setfield(obj_properties, "y",-4.90916e-07);
+obj_properties = setfield(obj_properties, "z",2.29753e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.14845e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.14845e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.14845e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-5.5391e-07);
+obj_properties = setfield(obj_properties, "y",1.35495e-06);
+obj_properties = setfield(obj_properties, "z",-3.20147e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.75786e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.75786e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.75786e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.1413e-06);
+obj_properties = setfield(obj_properties, "y",-1.47946e-07);
+obj_properties = setfield(obj_properties, "z",2.7921e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.33044e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.33044e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.33044e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",5.42549e-07);
+obj_properties = setfield(obj_properties, "y",-1.66488e-06);
+obj_properties = setfield(obj_properties, "z",-7.01872e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.32491e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.32491e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.32491e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-1.05739e-06);
+obj_properties = setfield(obj_properties, "y",2.78542e-06);
+obj_properties = setfield(obj_properties, "z",-7.56525e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.79846e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.79846e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.79846e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.7244e-06);
+obj_properties = setfield(obj_properties, "y",3.75157e-06);
+obj_properties = setfield(obj_properties, "z",1.06066e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.76918e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.76918e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.76918e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-2.50339e-06);
+obj_properties = setfield(obj_properties, "y",4.25725e-07);
+obj_properties = setfield(obj_properties, "z",9.83389e-08);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.17529e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.17529e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.17529e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.11946e-06);
+obj_properties = setfield(obj_properties, "y",1.40814e-06);
+obj_properties = setfield(obj_properties, "z",-7.31068e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",8.85956e-08);
+obj_properties = setfield(obj_properties, "radius 2",8.85956e-08);
+obj_properties = setfield(obj_properties, "radius 3",8.85956e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-8.75017e-08);
+obj_properties = setfield(obj_properties, "y",3.51119e-06);
+obj_properties = setfield(obj_properties, "z",-1.5161e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.46016e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.46016e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.46016e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-5.2693e-06);
+obj_properties = setfield(obj_properties, "y",7.10467e-07);
+obj_properties = setfield(obj_properties, "z",9.79188e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.82838e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.82838e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.82838e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-2.224e-06);
+obj_properties = setfield(obj_properties, "y",1.25002e-06);
+obj_properties = setfield(obj_properties, "z",-9.13392e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.042e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.042e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.042e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-1.67145e-06);
+obj_properties = setfield(obj_properties, "y",-1.22794e-07);
+obj_properties = setfield(obj_properties, "z",-7.52328e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.11628e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.11628e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.11628e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.46805e-06);
+obj_properties = setfield(obj_properties, "y",1.14078e-06);
+obj_properties = setfield(obj_properties, "z",-6.46583e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.21166e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.21166e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.21166e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",6.37498e-07);
+obj_properties = setfield(obj_properties, "y",-3.92015e-06);
+obj_properties = setfield(obj_properties, "z",4.41025e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.29829e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.29829e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.29829e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",2.3095e-07);
+obj_properties = setfield(obj_properties, "y",4.78294e-07);
+obj_properties = setfield(obj_properties, "z",-1.35685e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.12318e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.12318e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.12318e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.42187e-06);
+obj_properties = setfield(obj_properties, "y",8.03642e-07);
+obj_properties = setfield(obj_properties, "z",3.11055e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.70031e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.70031e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.70031e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-3.1566e-07);
+obj_properties = setfield(obj_properties, "y",1.65651e-06);
+obj_properties = setfield(obj_properties, "z",1.73384e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.60304e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.60304e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.60304e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",2.16975e-07);
+obj_properties = setfield(obj_properties, "y",4.3257e-06);
+obj_properties = setfield(obj_properties, "z",1.55324e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.38404e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.38404e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.38404e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.46639e-06);
+obj_properties = setfield(obj_properties, "y",1.81615e-06);
+obj_properties = setfield(obj_properties, "z",-6.56488e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",8.71093e-08);
+obj_properties = setfield(obj_properties, "radius 2",8.71093e-08);
+obj_properties = setfield(obj_properties, "radius 3",8.71093e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",2.06154e-06);
+obj_properties = setfield(obj_properties, "y",4.24667e-07);
+obj_properties = setfield(obj_properties, "z",-9.21322e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.31645e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.31645e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.31645e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-6.12841e-07);
+obj_properties = setfield(obj_properties, "y",-5.47017e-07);
+obj_properties = setfield(obj_properties, "z",6.41608e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.29874e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.29874e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.29874e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",8.85804e-07);
+obj_properties = setfield(obj_properties, "y",-1.32045e-06);
+obj_properties = setfield(obj_properties, "z",1.58605e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.53193e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.53193e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.53193e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.05409e-06);
+obj_properties = setfield(obj_properties, "y",4.21337e-07);
+obj_properties = setfield(obj_properties, "z",-2.84929e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.57604e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.57604e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.57604e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-3.78154e-07);
+obj_properties = setfield(obj_properties, "y",1.59218e-06);
+obj_properties = setfield(obj_properties, "z",2.6336e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.86045e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.86045e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.86045e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",2.3591e-06);
+obj_properties = setfield(obj_properties, "y",-1.11128e-06);
+obj_properties = setfield(obj_properties, "z",-1.2538e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.25509e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.25509e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.25509e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-2.447e-06);
+obj_properties = setfield(obj_properties, "y",-1.623e-06);
+obj_properties = setfield(obj_properties, "z",-1.9133e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.41279e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.41279e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.41279e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",2.10601e-07);
+obj_properties = setfield(obj_properties, "y",3.86405e-06);
+obj_properties = setfield(obj_properties, "z",-2.71923e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.09282e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.09282e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.09282e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-6.62989e-07);
+obj_properties = setfield(obj_properties, "y",7.48071e-07);
+obj_properties = setfield(obj_properties, "z",-9.782e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",8.5391e-08);
+obj_properties = setfield(obj_properties, "radius 2",8.5391e-08);
+obj_properties = setfield(obj_properties, "radius 3",8.5391e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.47431e-06);
+obj_properties = setfield(obj_properties, "y",-7.22143e-07);
+obj_properties = setfield(obj_properties, "z",1.49753e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.5237e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.5237e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.5237e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.70134e-06);
+obj_properties = setfield(obj_properties, "y",1.74297e-06);
+obj_properties = setfield(obj_properties, "z",-1.74582e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.01101e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.01101e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.01101e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-2.31752e-06);
+obj_properties = setfield(obj_properties, "y",-2.2187e-06);
+obj_properties = setfield(obj_properties, "z",5.28865e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",8.52895e-08);
+obj_properties = setfield(obj_properties, "radius 2",8.52895e-08);
+obj_properties = setfield(obj_properties, "radius 3",8.52895e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.40174e-06);
+obj_properties = setfield(obj_properties, "y",1.7002e-06);
+obj_properties = setfield(obj_properties, "z",1.37355e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.67068e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.67068e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.67068e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-1.60217e-06);
+obj_properties = setfield(obj_properties, "y",-1.18381e-07);
+obj_properties = setfield(obj_properties, "z",4.36658e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.54601e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.54601e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.54601e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-4.6475e-07);
+obj_properties = setfield(obj_properties, "y",-7.82366e-07);
+obj_properties = setfield(obj_properties, "z",-1.38686e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",8.07116e-08);
+obj_properties = setfield(obj_properties, "radius 2",8.07116e-08);
+obj_properties = setfield(obj_properties, "radius 3",8.07116e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-1.67583e-06);
+obj_properties = setfield(obj_properties, "y",-2.76065e-07);
+obj_properties = setfield(obj_properties, "z",-1.38601e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.72216e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.72216e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.72216e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",9.84065e-07);
+obj_properties = setfield(obj_properties, "y",1.58203e-07);
+obj_properties = setfield(obj_properties, "z",1.21481e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.51868e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.51868e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.51868e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-6.07562e-07);
+obj_properties = setfield(obj_properties, "y",-1.5676e-06);
+obj_properties = setfield(obj_properties, "z",5.45411e-09);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.52437e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.52437e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.52437e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",4.0645e-06);
+obj_properties = setfield(obj_properties, "y",-1.24775e-07);
+obj_properties = setfield(obj_properties, "z",3.1928e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.60958e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.60958e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.60958e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",7.58171e-07);
+obj_properties = setfield(obj_properties, "y",2.08229e-06);
+obj_properties = setfield(obj_properties, "z",-2.7985e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.13404e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.13404e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.13404e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-1.72958e-06);
+obj_properties = setfield(obj_properties, "y",-3.34455e-06);
+obj_properties = setfield(obj_properties, "z",-1.87828e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.8498e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.8498e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.8498e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.98572e-06);
+obj_properties = setfield(obj_properties, "y",2.54961e-06);
+obj_properties = setfield(obj_properties, "z",-2.72844e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.99386e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.99386e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.99386e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-2.14954e-06);
+obj_properties = setfield(obj_properties, "y",-3.75457e-07);
+obj_properties = setfield(obj_properties, "z",-3.67138e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.93822e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.93822e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.93822e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-2.53352e-06);
+obj_properties = setfield(obj_properties, "y",-7.60153e-07);
+obj_properties = setfield(obj_properties, "z",1.96019e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.5758e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.5758e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.5758e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",6.23509e-07);
+obj_properties = setfield(obj_properties, "y",-3.16217e-06);
+obj_properties = setfield(obj_properties, "z",1.28e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",8.53665e-08);
+obj_properties = setfield(obj_properties, "radius 2",8.53665e-08);
+obj_properties = setfield(obj_properties, "radius 3",8.53665e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.84261e-06);
+obj_properties = setfield(obj_properties, "y",2.13912e-06);
+obj_properties = setfield(obj_properties, "z",1.14299e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.92185e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.92185e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.92185e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-2.37156e-06);
+obj_properties = setfield(obj_properties, "y",1.13088e-06);
+obj_properties = setfield(obj_properties, "z",6.49152e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.88986e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.88986e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.88986e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",2.12282e-06);
+obj_properties = setfield(obj_properties, "y",1.65548e-07);
+obj_properties = setfield(obj_properties, "z",2.10183e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.25183e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.25183e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.25183e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.74652e-06);
+obj_properties = setfield(obj_properties, "y",2.89735e-06);
+obj_properties = setfield(obj_properties, "z",1.16697e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.5521e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.5521e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.5521e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",2.63618e-06);
+obj_properties = setfield(obj_properties, "y",-3.69731e-06);
+obj_properties = setfield(obj_properties, "z",-1.8431e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.02592e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.02592e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.02592e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.87935e-06);
+obj_properties = setfield(obj_properties, "y",1.27926e-06);
+obj_properties = setfield(obj_properties, "z",-2.53647e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.5814e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.5814e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.5814e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",7.19638e-07);
+obj_properties = setfield(obj_properties, "y",-1.66219e-06);
+obj_properties = setfield(obj_properties, "z",-1.37291e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.17095e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.17095e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.17095e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",6.35143e-07);
+obj_properties = setfield(obj_properties, "y",6.58785e-07);
+obj_properties = setfield(obj_properties, "z",-4.90763e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.2451e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.2451e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.2451e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-1.90851e-06);
+obj_properties = setfield(obj_properties, "y",-9.70877e-07);
+obj_properties = setfield(obj_properties, "z",-1.73146e-06);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",7.98487e-08);
+obj_properties = setfield(obj_properties, "radius 2",7.98487e-08);
+obj_properties = setfield(obj_properties, "radius 3",7.98487e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-1.89873e-06);
+obj_properties = setfield(obj_properties, "y",3.12176e-06);
+obj_properties = setfield(obj_properties, "z",-3.59504e-08);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.11481e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.11481e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.11481e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-1.42976e-06);
+obj_properties = setfield(obj_properties, "y",-9.23013e-07);
+obj_properties = setfield(obj_properties, "z",8.35571e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",5.77632e-08);
+obj_properties = setfield(obj_properties, "radius 2",5.77632e-08);
+obj_properties = setfield(obj_properties, "radius 3",5.77632e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-2.08652e-06);
+obj_properties = setfield(obj_properties, "y",-1.06883e-06);
+obj_properties = setfield(obj_properties, "z",-8.90462e-08);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.49662e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.49662e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.49662e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-1.62151e-07);
+obj_properties = setfield(obj_properties, "y",-2.48048e-07);
+obj_properties = setfield(obj_properties, "z",-4.28073e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",9.96905e-08);
+obj_properties = setfield(obj_properties, "radius 2",9.96905e-08);
+obj_properties = setfield(obj_properties, "radius 3",9.96905e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",-3.53293e-07);
+obj_properties = setfield(obj_properties, "y",2.75671e-07);
+obj_properties = setfield(obj_properties, "z",9.16267e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# sphere (Sphere)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "detail",0);
+obj_properties = setfield(obj_properties, "index","1.5");
+obj_properties = setfield(obj_properties, "name","sphere");
+obj_properties = setfield(obj_properties, "radius",6.33926e-08);
+obj_properties = setfield(obj_properties, "radius 2",6.33926e-08);
+obj_properties = setfield(obj_properties, "radius 3",6.33926e-08);
+obj_properties = setfield(obj_properties, "type","Sphere");
+obj_properties = setfield(obj_properties, "x",1.70557e-06);
+obj_properties = setfield(obj_properties, "y",-3.31498e-07);
+obj_properties = setfield(obj_properties, "z",-4.32761e-07);
+
+groupscope("::model::gauss_par_distr");addsphere;
+try{set(obj_properties);}
+
+# source (DipoleSource)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "amplitude",10);
+obj_properties = setfield(obj_properties, "name","source");
+obj_properties = setfield(obj_properties, "optimize for short pulse",0);
+obj_properties = setfield(obj_properties, "type","DipoleSource");
+
+groupscope("::model");adddipole;
+try{set(obj_properties);}
+
+# source_1 (DipoleSource)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "amplitude",10);
+obj_properties = setfield(obj_properties, "name","source_1");
+obj_properties = setfield(obj_properties, "optimize for short pulse",0);
+obj_properties = setfield(obj_properties, "type","DipoleSource");
+obj_properties = setfield(obj_properties, "x",3.3e-06);
+obj_properties = setfield(obj_properties, "y",3.3e-06);
+
+groupscope("::model");adddipole;
+try{set(obj_properties);}
+
+# source_1_1 (DipoleSource)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "amplitude",10);
+obj_properties = setfield(obj_properties, "name","source_1_1");
+obj_properties = setfield(obj_properties, "optimize for short pulse",0);
+obj_properties = setfield(obj_properties, "type","DipoleSource");
+obj_properties = setfield(obj_properties, "x",-3.3e-06);
+obj_properties = setfield(obj_properties, "y",3.3e-06);
+
+groupscope("::model");adddipole;
+try{set(obj_properties);}
+
+# source_1_1_1 (DipoleSource)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "amplitude",10);
+obj_properties = setfield(obj_properties, "name","source_1_1_1");
+obj_properties = setfield(obj_properties, "optimize for short pulse",0);
+obj_properties = setfield(obj_properties, "type","DipoleSource");
+obj_properties = setfield(obj_properties, "x",-3.3e-06);
+obj_properties = setfield(obj_properties, "y",-3.3e-06);
+
+groupscope("::model");adddipole;
+try{set(obj_properties);}
+
+# source_1_1_1_1 (DipoleSource)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "amplitude",10);
+obj_properties = setfield(obj_properties, "name","source_1_1_1_1");
+obj_properties = setfield(obj_properties, "optimize for short pulse",0);
+obj_properties = setfield(obj_properties, "type","DipoleSource");
+obj_properties = setfield(obj_properties, "x",3.3e-06);
+obj_properties = setfield(obj_properties, "y",-3.3e-06);
+
+groupscope("::model");adddipole;
+try{set(obj_properties);}
+
+# FDTD (FDTD)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "background material","H2O (Water) - Palik");
+obj_properties = setfield(obj_properties, "dimension","2D");
+obj_properties = setfield(obj_properties, "global monitor custom frequency samples",588878042500000);
+obj_properties = setfield(obj_properties, "global monitor frequency center",588878042500000);
+obj_properties = setfield(obj_properties, "global monitor frequency points",5);
+obj_properties = setfield(obj_properties, "global monitor frequency span",321206205000000);
+obj_properties = setfield(obj_properties, "global monitor maximum frequency",749481145000000);
+obj_properties = setfield(obj_properties, "global monitor maximum wavelength",7e-07);
+obj_properties = setfield(obj_properties, "global monitor minimum frequency",428274940000000);
+obj_properties = setfield(obj_properties, "global monitor minimum wavelength",4e-07);
+obj_properties = setfield(obj_properties, "global monitor sample spacing","uniform");
+obj_properties = setfield(obj_properties, "global monitor use source limits",1);
+obj_properties = setfield(obj_properties, "global monitor use wavelength spacing",0);
+obj_properties = setfield(obj_properties, "global monitor wavelength center",5.5e-07);
+obj_properties = setfield(obj_properties, "global monitor wavelength span",3e-07);
+obj_properties = setfield(obj_properties, "global source bandwidth",321206205000000);
+obj_properties = setfield(obj_properties, "global source center frequency",588878042500000);
+obj_properties = setfield(obj_properties, "global source center wavelength",5.5e-07);
+obj_properties = setfield(obj_properties, "global source eliminate discontinuities",1);
+obj_properties = setfield(obj_properties, "global source frequency",588878042500000);
+obj_properties = setfield(obj_properties, "global source frequency span",321206205000000);
+obj_properties = setfield(obj_properties, "global source frequency start",428274940000000);
+obj_properties = setfield(obj_properties, "global source frequency stop",749481145000000);
+obj_properties = setfield(obj_properties, "global source offset",7.52311e-15);
+obj_properties = setfield(obj_properties, "global source optimize for short pulse",1);
+obj_properties = setfield(obj_properties, "global source pulse type","broadband");
+obj_properties = setfield(obj_properties, "global source pulselength",2.65335e-15);
+obj_properties = setfield(obj_properties, "global source set frequency",0);
+obj_properties = setfield(obj_properties, "global source set time domain",0);
+obj_properties = setfield(obj_properties, "global source set wavelength",1);
+obj_properties = setfield(obj_properties, "global source wavelength span",3e-07);
+obj_properties = setfield(obj_properties, "global source wavelength start",4e-07);
+obj_properties = setfield(obj_properties, "global source wavelength stop",7e-07);
+obj_properties = setfield(obj_properties, "index",1);
+obj_properties = setfield(obj_properties, "pml layers",12);
+obj_properties = setfield(obj_properties, "pml min layers",12);
+obj_properties = setfield(obj_properties, "pml profile",4);
+obj_properties = setfield(obj_properties, "pml sigma",0.25);
+obj_properties = setfield(obj_properties, "pml type","uniaxial anisotropic PML (legacy)");
+obj_properties = setfield(obj_properties, "simulation temperature",320);
+obj_properties = setfield(obj_properties, "simulation time",4e-12);
+obj_properties = setfield(obj_properties, "type","FDTD");
+obj_properties = setfield(obj_properties, "use auto shutoff",0);
+obj_properties = setfield(obj_properties, "use early shutoff",0);
+obj_properties = setfield(obj_properties, "x",3.5e-07);
+obj_properties = setfield(obj_properties, "x span",1.99e-05);
+obj_properties = setfield(obj_properties, "y span",1.5e-05);
+
+groupscope("::model");addfdtd;set('same settings on all boundaries', 0);
+try{set(obj_properties);}
+
+# monitor (TimeMonitor)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "name","monitor");
+obj_properties = setfield(obj_properties, "plugin material","{00000000-0000-0000-0000-000000000000}");
+obj_properties = setfield(obj_properties, "spatial interpolation","nearest mesh cell");
+obj_properties = setfield(obj_properties, "type","TimeMonitor");
+obj_properties = setfield(obj_properties, "x",3.5e-06);
+obj_properties = setfield(obj_properties, "x max",3.5e-06);
+obj_properties = setfield(obj_properties, "x min",3.5e-06);
+obj_properties = setfield(obj_properties, "y",1.1e-06);
+obj_properties = setfield(obj_properties, "y max",1.1e-06);
+obj_properties = setfield(obj_properties, "y min",1.1e-06);
+
+groupscope("::model");addtime;
+try{set(obj_properties);}
+
+# spectrum_monitor (DFTMonitor)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "apodization","Full");
+obj_properties = setfield(obj_properties, "apodization center",1e-12);
+obj_properties = setfield(obj_properties, "apodization time width",5e-13);
+obj_properties = setfield(obj_properties, "frequency points",5000);
+obj_properties = setfield(obj_properties, "monitor type","Point");
+obj_properties = setfield(obj_properties, "name","spectrum_monitor");
+obj_properties = setfield(obj_properties, "override global monitor settings",1);
+obj_properties = setfield(obj_properties, "type","DFTMonitor");
+obj_properties = setfield(obj_properties, "x",4.9e-06);
+obj_properties = setfield(obj_properties, "x max",4.9e-06);
+obj_properties = setfield(obj_properties, "x min",4.9e-06);
+obj_properties = setfield(obj_properties, "y",-9e-07);
+obj_properties = setfield(obj_properties, "y max",-9e-07);
+obj_properties = setfield(obj_properties, "y min",-9e-07);
+
+groupscope("::model");addpower;
+try{set(obj_properties);}
+
+# movie (MovieMonitor)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "horizontal resolution",1080);
+obj_properties = setfield(obj_properties, "lock aspect ratio",1);
+obj_properties = setfield(obj_properties, "name","movie");
+obj_properties = setfield(obj_properties, "type","MovieMonitor");
+obj_properties = setfield(obj_properties, "x span",1.1e-05);
+obj_properties = setfield(obj_properties, "y span",1.1e-05);
+
+groupscope("::model");addmovie;
+try{set(obj_properties);}
+
+# mesh (Mesh)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "dx",2e-08);
+obj_properties = setfield(obj_properties, "dy",2e-08);
+obj_properties = setfield(obj_properties, "dz",2e-08);
+obj_properties = setfield(obj_properties, "name","mesh");
+obj_properties = setfield(obj_properties, "type","Mesh");
+obj_properties = setfield(obj_properties, "x span",1.1e-05);
+obj_properties = setfield(obj_properties, "y span",1.1e-05);
+obj_properties = setfield(obj_properties, "z span",1.1e-05);
+
+groupscope("::model");addmesh;
+try{set(obj_properties);}
+
+# 474nm_monitor (DFTMonitor)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "apodization","Full");
+obj_properties = setfield(obj_properties, "apodization center",1e-12);
+obj_properties = setfield(obj_properties, "apodization time width",5e-13);
+obj_properties = setfield(obj_properties, "frequency points",1);
+obj_properties = setfield(obj_properties, "name","474nm_monitor");
+obj_properties = setfield(obj_properties, "override global monitor settings",1);
+obj_properties = setfield(obj_properties, "spatial interpolation","specified position");
+obj_properties = setfield(obj_properties, "type","DFTMonitor");
+obj_properties = setfield(obj_properties, "use source limits",0);
+obj_properties = setfield(obj_properties, "wavelength center",4.74e-07);
+obj_properties = setfield(obj_properties, "wavelength span",0);
+obj_properties = setfield(obj_properties, "x span",1.1e-05);
+obj_properties = setfield(obj_properties, "y span",1.1e-05);
+
+groupscope("::model");addpower;
+try{set(obj_properties);}
+
+# 458nm_monitor (DFTMonitor)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "apodization","Full");
+obj_properties = setfield(obj_properties, "apodization center",1e-12);
+obj_properties = setfield(obj_properties, "apodization time width",5e-13);
+obj_properties = setfield(obj_properties, "frequency points",1);
+obj_properties = setfield(obj_properties, "name","458nm_monitor");
+obj_properties = setfield(obj_properties, "override global monitor settings",1);
+obj_properties = setfield(obj_properties, "spatial interpolation","specified position");
+obj_properties = setfield(obj_properties, "type","DFTMonitor");
+obj_properties = setfield(obj_properties, "use source limits",0);
+obj_properties = setfield(obj_properties, "wavelength center",4.58e-07);
+obj_properties = setfield(obj_properties, "wavelength span",0);
+obj_properties = setfield(obj_properties, "x span",1.1e-05);
+obj_properties = setfield(obj_properties, "y span",1.1e-05);
+
+groupscope("::model");addpower;
+try{set(obj_properties);}
+
+# 443nm_monitor (DFTMonitor)
+obj_properties = struct;
+obj_properties = setfield(obj_properties, "apodization","Full");
+obj_properties = setfield(obj_properties, "apodization center",1e-12);
+obj_properties = setfield(obj_properties, "apodization time width",5e-13);
+obj_properties = setfield(obj_properties, "frequency points",1);
+obj_properties = setfield(obj_properties, "name","443nm_monitor");
+obj_properties = setfield(obj_properties, "override global monitor settings",1);
+obj_properties = setfield(obj_properties, "spatial interpolation","specified position");
+obj_properties = setfield(obj_properties, "type","DFTMonitor");
+obj_properties = setfield(obj_properties, "use source limits",0);
+obj_properties = setfield(obj_properties, "wavelength center",4.43e-07);
+obj_properties = setfield(obj_properties, "wavelength span",0);
+obj_properties = setfield(obj_properties, "x span",1.1e-05);
+obj_properties = setfield(obj_properties, "y span",1.1e-05);
+
+groupscope("::model");addpower;
+try{set(obj_properties);}
+
