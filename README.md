@@ -20,6 +20,8 @@ The time domain model we have designed is run on 2-dimensions (on the x-y plane)
 
 We have used a “frequency domain field and power” monitor to find the resonance modes, then obtain the heatmaps on those resonance points using a “frequency domain field profile” monitor. We have applied a full apodization filter at 1000 fs center with 500 fs time-width to filter out the initial and final response of the cavity to the power sources. 
 
+Please note that we have named script files of toroidal models as "donut cavity". 
+
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Details of Disk-Shaped Model
 
